@@ -1,6 +1,6 @@
 package cc.timeli.algebra.auth
 
-object AuthDto {
+object authDtos {
 
   case class LoginDto(email: String, password: String)
   case class SignupDto(email: String, password: String, firstName: String, lastName: String)
