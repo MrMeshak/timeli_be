@@ -19,10 +19,8 @@ trait AuthAlgebra[F[_]] {
 }
 
 final class AuthAlgebraLive[F[_]: MonadThrow: LoggerFactory](session: Session[F]) extends AuthAlgebra[F] {
-  override def login(signupDto: SignupDto): EitherT[F, AuthError, LoginData] = EitherT.leftT(InvalidCredentials("test"))
-
-  override def signup(loginDto: LoginDto): EitherT[F, AuthError, Unit] = EitherT.leftT(InvalidCredentials("test"))
-
+  override def login(signupDto: SignupDto): EitherT[F, AuthError, LoginData] = ???
+  override def signup(loginDto: LoginDto): EitherT[F, AuthError, Unit]       = EitherT.leftT(InvalidCredentials("test"))
 }
 
 object AuthAlgebraLive {

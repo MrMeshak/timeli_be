@@ -11,13 +11,15 @@ import org.typelevel.log4cats.LoggerFactory
 import skunk.Session
 
 import cc.timeli.app.HealthRoutes
+import cc.timeli.app.AuthRoutes
 
 class AppRoutes[F[_]: Concurrent: LoggerFactory](session: Session[F]) {
 
   private val healthRoutes = HealthRoutes[F].routes
+  private val authRoutes   = AuthRoutes[F](session).routes
 
   val routes = Router(
-    "api" -> healthRoutes,
+    "api" -> (healthRoutes <+> authRoutes),
   )
 }
 

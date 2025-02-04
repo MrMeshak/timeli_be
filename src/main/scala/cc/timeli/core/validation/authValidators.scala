@@ -11,7 +11,6 @@ object authValidators {
   given loginDtoValidator: Validator[LoginDto] with {
     override def validate(value: LoginDto): ValidatedNel[ValidationFailure, LoginDto] = {
       val LoginDto(email, password) = value;
-
       (
         validateEmail(email, "email"),
         validateRequired(password, "password")(_.nonEmpty),

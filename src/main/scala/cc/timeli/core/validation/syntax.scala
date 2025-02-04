@@ -1,6 +1,6 @@
 package cc.timeli.core.validation
 
-import io.circe.generic.auto.*
+import io.circe.generic.semiauto.*
 import org.http4s.circe.CirceEntityCodec.*
 
 import cats.*
@@ -12,6 +12,7 @@ import org.http4s.*
 import org.http4s.dsl.Http4sDsl
 
 import cc.timeli.core.validation.Validator
+import cc.timeli.core.responses.responses.FailureRes
 
 object syntax {
 
@@ -26,8 +27,15 @@ object syntax {
           .as[A]
           .map(validateEntity)
           .flatMap({
-            case Valid(entity)   => serverLogicIfValid(entity)
-            case Invalid(errors) => BadRequest(errors.toList.map(_.message))
+            case Valid(entity) => serverLogicIfValid(entity)
+            case Invalid(errors) =>
+              BadRequest(
+                FailureRes(
+                  error = "Invalid Payload",
+                  message = "one or more fields are invalid",
+                  details = errors.toList.map(error => FailureRes(error.fieldName, error.message, List())),
+                ),
+              )
           })
       }
   }

@@ -1,6 +1,10 @@
 package cc.timeli.app
 
-import cats.Monad
+import org.http4s.circe.CirceEntityCodec.*
+import io.circe.generic.semiauto.*
+import io.circe.syntax.*
+
+import cats.effect.Concurrent
 import cats.implicits.*
 import cats.syntax.*
 import org.http4s.*
@@ -10,14 +14,29 @@ import org.http4s.server.*
 import org.typelevel.log4cats.LoggerFactory
 import skunk.Session
 
-class AuthRoutes[F[_]: Monad: LoggerFactory](session: Session[F]) extends Http4sDsl[F] {
+import cc.timeli.core.validation.authValidators.given
+import cc.timeli.core.validation.syntax.*
+import cc.timeli.algebra.auth.authDtos.{LoginDto, SignupDto}
+
+class AuthRoutes[F[_]: Concurrent: LoggerFactory](session: Session[F]) extends HttpValidationDsl[F] {
 
   private val loginRoute: HttpRoutes[F] = HttpRoutes.of[F]({
-    case req @ POST -> Root / "login" => ???
+    case req @ POST -> Root / "login" =>
+      req.validate[LoginDto](loginDto =>
+        for {
+          res <- Ok("login route test")
+        } yield res,
+      )
+
   })
 
   private val signupRoute: HttpRoutes[F] = HttpRoutes.of[F]({
-    case req @ POST -> Root / "signup" => ???
+    case req @ POST -> Root / "signup" =>
+      req.validate[SignupDto](signupDto =>
+        for {
+          res <- Ok("signup route test")
+        } yield res,
+      )
   })
 
   val routes: HttpRoutes[F] = Router(
@@ -27,5 +46,8 @@ class AuthRoutes[F[_]: Monad: LoggerFactory](session: Session[F]) extends Http4s
 }
 
 object AuthRoutes {
-  def apply[F[_]: Monad: LoggerFactory](session: Session[F]) = new AuthRoutes(session)
+  def apply[F[_]: Concurrent: LoggerFactory](session: Session[F]) = new AuthRoutes(session)
+
+  // validators
+
 }
