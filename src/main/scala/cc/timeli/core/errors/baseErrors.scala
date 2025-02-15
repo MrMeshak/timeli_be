@@ -1,7 +1,12 @@
 package cc.timeli.core.errors
 
-sealed trait BaseError {
+sealed trait BaseError extends Product with Serializable {
   def message: String
 }
 
-object baseErrors {}
+object baseErrors {
+
+  case class InvalidCredentials(override val message: String) extends BaseError {}
+  case class AlreadyExistsError(override val message: String) extends BaseError {}
+  case class NotFoundError(override val message: String)      extends BaseError {}
+}
