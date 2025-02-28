@@ -17,5 +17,7 @@ object syntax {
         case Left(errors) => F.raiseError[A](ConfigReaderException(errors))
         case Right(value) => F.pure(value)
       }
+
   }
+
 }
