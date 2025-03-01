@@ -11,8 +11,9 @@ import natchez.Trace.Implicits.noop
 import org.http4s.ember.server.EmberServerBuilder
 
 import cc.timeli.core.config.syntax.*
-import cc.timeli.core.config.{DbConfig, ServerConfig}
+import cc.timeli.core.config.{DbConfig, ServerConfig, JwtConfig}
 import cc.timeli.core.db.Db
+import cc.timeli.core.utils.{JwtUtils, JwtUtilsLive}
 import cc.timeli.app.AppRoutes
 
 object Main extends IOApp.Simple {
@@ -20,16 +21,17 @@ object Main extends IOApp.Simple {
   given LoggerFactory[IO] = Slf4jFactory.create[IO]
 
   override def run: IO[Unit] = {
-
     val serverR = for {
       serverConfig <- Resource.eval(ConfigSource.default.at("server").loadF[IO, ServerConfig])
       dbConfig     <- Resource.eval(ConfigSource.default.at("db").loadF[IO, DbConfig])
+      jwtConfig    <- Resource.eval(ConfigSource.default.at("jwt").loadF[IO, JwtConfig])
+      jwtUtils     <- Resource.eval(IO.pure(JwtUtilsLive[IO](jwtConfig)))
       session      <- Db.single[IO](dbConfig)
       server <- EmberServerBuilder
         .default[IO]
         .withHost(serverConfig.host)
         .withPort(serverConfig.port)
-        .withHttpApp(AppRoutes[IO](session).routes.orNotFound)
+        .withHttpApp(AppRoutes[IO](session, jwtUtils).routes.orNotFound)
         .build
     } yield server
 

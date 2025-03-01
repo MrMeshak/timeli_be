@@ -20,14 +20,26 @@ import cc.timeli.core.errors.baseErrors.*
 import cc.timeli.algebra.auth.authDtos.{LoginDto, SignupDto}
 import cc.timeli.algebra.auth.AuthAlgebra
 import cc.timeli.core.responses.responses.FailureRes
+import cc.timeli.core.utils.JwtUtils
 
-class AuthRoutes[F[_]: Concurrent: LoggerFactory](session: Session[F], authAlgebra: AuthAlgebra[F])
-    extends HttpValidationDsl[F] {
+class AuthRoutes[F[_]: Concurrent: LoggerFactory](
+    session: Session[F],
+    authAlgebra: AuthAlgebra[F],
+) extends HttpValidationDsl[F] {
 
   private val loginRoute: HttpRoutes[F] = HttpRoutes.of[F]({
     case req @ POST -> Root / "login" =>
-      req.validate[LoginDto](loginDto => ???)
-
+      req.validate[LoginDto](loginDto =>
+        authAlgebra
+          .login(loginDto)
+          .value
+          .flatMap({
+            case Right(loginData) => Ok(loginData)
+            case Left(error: InvalidCredentialsError) =>
+              Forbidden(FailureRes(error.getClass().getSimpleName(), error.message, List()))
+            case Left(error) => BadRequest(FailureRes(error.getClass().getSimpleName(), error.message, List()))
+          }),
+      )
   })
 
   private val signupRoute: HttpRoutes[F] = HttpRoutes.of[F]({
@@ -39,7 +51,9 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](session: Session[F], authAlgeb
           .flatMap({
             case Right(_) => Ok()
             case Left(AlreadyExistsError(message)) =>
-              BadRequest(FailureRes(AlreadyExistsError.getClass().getName(), message, List()))
+              BadRequest(FailureRes(AlreadyExistsError.getClass().getSimpleName().dropRight(1), message, List()))
+            case Left(error) =>
+              BadRequest(FailureRes(error.getClass().getSimpleName().dropRight(1), error.message, List()))
           }),
       )
   })
@@ -53,7 +67,4 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](session: Session[F], authAlgeb
 object AuthRoutes {
   def apply[F[_]: Concurrent: LoggerFactory](session: Session[F], authAlgebra: AuthAlgebra[F]) =
     new AuthRoutes(session, authAlgebra)
-
-  // validators
-
 }

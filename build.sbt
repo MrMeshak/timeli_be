@@ -20,4 +20,5 @@ lazy val root = project
       "io.github.jmcardon"    %% "tsec-http4s"         % "0.5.0",
       "at.favre.lib"           % "bcrypt"              % "0.10.2",
     ),
+    Compile / mainClass := Some("cc.timeli.Main"),
   )

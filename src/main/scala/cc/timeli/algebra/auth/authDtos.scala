@@ -11,7 +11,7 @@ object authDtos {
   case class SignupDto(email: String, password: String, firstName: String, lastName: String)
   object SignupDto { given Decoder[SignupDto] = deriveDecoder[SignupDto] }
 
-  case class LoginData(authToken: String, refreshToken: String)
+  case class LoginData(accessToken: String, refreshToken: String)
   object LoginData { given Encoder[LoginData] = deriveEncoder[LoginData] }
 
 }

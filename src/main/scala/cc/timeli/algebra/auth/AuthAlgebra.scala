@@ -2,14 +2,14 @@ package cc.timeli.algebra.auth
 
 import scala.util.Try
 
-import cats.MonadThrow
+import cats.effect.Concurrent
 import cats.data.EitherT
 import cats.implicits.*
 import cats.syntax.*
 import skunk.*
 import skunk.syntax.all.*
 import skunk.codec.all.*
-import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.{Logger, LoggerFactory}
 
 import at.favre.lib.crypto.bcrypt.BCrypt
 import java.util.UUID
@@ -18,24 +18,52 @@ import cc.timeli.algebra.auth.authDtos.*
 import cc.timeli.core.errors.BaseError
 import cc.timeli.core.errors.baseErrors.*
 import cc.timeli.core.domain.user.*
+import cc.timeli.core.utils.JwtUtils
+import cc.timeli.core.logging.syntax.*
 
 trait AuthAlgebra[F[_]] {
-  def login(signupDto: LoginDto): EitherT[F, BaseError, LoginData]
-  def signup(loginDto: SignupDto): EitherT[F, BaseError, Unit]
+  def login(loginDto: LoginDto): EitherT[F, BaseError, LoginData]
+  def signup(signupDto: SignupDto): EitherT[F, BaseError, Unit]
 }
 
-final class AuthAlgebraLive[F[_]: MonadThrow: LoggerFactory](session: Session[F]) extends AuthAlgebra[F] {
-  val logger = LoggerFactory.getLogger()
+final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](session: Session[F], jwtUtils: JwtUtils[F])
+    extends AuthAlgebra[F] {
+  given logger: Logger[F] = LoggerFactory.getLogger()
 
-  override def login(login: LoginDto): EitherT[F, BaseError, LoginData] = ???
+  override def login(loginDto: LoginDto): EitherT[F, BaseError, LoginData] = {
+    for {
+      query <- EitherT.right(
+        session
+          .prepare(
+            sql"""SELECT * FROM users WHERE email = $varchar"""
+              .query(userCodec),
+          ),
+      )
+      user <- EitherT.fromOptionF(query.option(loginDto.email), InvalidCredentialsError())
+      _ <- EitherT.cond(
+        BCrypt.verifyer().verify(loginDto.password.toCharArray(), user.password).verified,
+        (),
+        InvalidCredentialsError(),
+      )
+      accessToken  <- EitherT.right(jwtUtils.createAccessToken(user.id))
+      refreshToken <- EitherT.right(jwtUtils.createRefreshToken(user.id))
+    } yield LoginData(accessToken, refreshToken)
+  }
 
   override def signup(signupDto: SignupDto): EitherT[F, BaseError, Unit] = {
     for {
-      query <- EitherT.right(session.prepare(sql"""SELECT * FROM users WHERE email = $varchar""".query(userCodec)))
+      query <- EitherT.right(
+        session.prepare(
+          sql"""SELECT id, email, password, firstName, lastName FROM users WHERE email = $varchar""".query(userCodec),
+        ),
+      )
       _ <- EitherT(
         query
           .option(signupDto.email)
-          .map(u => if (!u.isDefined) Right(()) else Left(AlreadyExistsError("user already exists, please login"))),
+          .map({
+            case Some(_) => Left(AlreadyExistsError("User already exists, please login"))
+            case None    => Right(())
+          }),
       )
       command <- EitherT.right(session.prepare(sql"""INSERT INTO users VALUES ($userCodec)""".command))
       _ <- EitherT.right(
@@ -49,12 +77,12 @@ final class AuthAlgebraLive[F[_]: MonadThrow: LoggerFactory](session: Session[F]
           ),
         ),
       )
-      _ <- EitherT.right(logger.info("inserted user into DB"))
-    } yield Right(())
+    } yield ()
   }
 }
 
 object AuthAlgebraLive {
-  def apply[F[_]: MonadThrow: LoggerFactory](session: Session[F]) = new AuthAlgebraLive[F](session)
+  def apply[F[_]: Concurrent: LoggerFactory](session: Session[F], jwtUtils: JwtUtils[F]) =
+    new AuthAlgebraLive[F](session, jwtUtils)
 
 }

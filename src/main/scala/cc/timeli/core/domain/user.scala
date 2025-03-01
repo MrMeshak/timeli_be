@@ -24,7 +24,7 @@ object user {
     given Encoder[User] = deriveEncoder[User].mapJsonObject(_.remove("password"))
   }
 
-  val userCodec: Codec[User] = (uuid, varchar, varchar, varchar, varchar).tupled.imap({
+  val userCodec: Codec[User] = (uuid, varchar(255), varchar(255), varchar(255), varchar(255)).tupled.imap({
     case (id, email, password, firstName, lastName) => User(id, email, password, firstName, lastName)
   })({ user =>
     (user.id, user.email, user.password, user.firstName, user.lastName)

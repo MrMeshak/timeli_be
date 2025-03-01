@@ -6,7 +6,7 @@ sealed trait BaseError extends Product with Serializable {
 
 object baseErrors {
 
-  case class InvalidCredentials(override val message: String) extends BaseError {}
-  case class AlreadyExistsError(override val message: String) extends BaseError {}
-  case class NotFoundError(override val message: String)      extends BaseError {}
+  case class InvalidCredentialsError(override val message: String = "Invalid credentials") extends BaseError {}
+  case class AlreadyExistsError(override val message: String)                              extends BaseError {}
+  case class NotFoundError(override val message: String)                                   extends BaseError {}
 }
