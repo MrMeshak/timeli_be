@@ -2,6 +2,7 @@ package cc.timeli.algebra.auth
 
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.*
+import org.http4s.ResponseCookie
 
 object authDtos {
 
@@ -11,7 +12,5 @@ object authDtos {
   case class SignupDto(email: String, password: String, firstName: String, lastName: String)
   object SignupDto { given Decoder[SignupDto] = deriveDecoder[SignupDto] }
 
-  case class LoginData(accessToken: String, refreshToken: String)
-  object LoginData { given Encoder[LoginData] = deriveEncoder[LoginData] }
-
+  case class LoginData(accessTokenCookie: ResponseCookie, refreshTokenCookie: ResponseCookie)
 }

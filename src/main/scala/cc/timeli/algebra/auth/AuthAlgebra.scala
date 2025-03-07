@@ -1,6 +1,6 @@
 package cc.timeli.algebra.auth
 
-import scala.util.Try
+import scala.concurrent.duration.*
 
 import cats.effect.Concurrent
 import cats.data.EitherT
@@ -9,7 +9,9 @@ import cats.syntax.*
 import skunk.*
 import skunk.syntax.all.*
 import skunk.codec.all.*
+import org.http4s.{ResponseCookie, SameSite}
 import org.typelevel.log4cats.{Logger, LoggerFactory}
+import dev.profunktor.redis4cats.RedisCommands
 
 import at.favre.lib.crypto.bcrypt.BCrypt
 import java.util.UUID
@@ -26,8 +28,11 @@ trait AuthAlgebra[F[_]] {
   def signup(signupDto: SignupDto): EitherT[F, BaseError, Unit]
 }
 
-final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](session: Session[F], jwtUtils: JwtUtils[F])
-    extends AuthAlgebra[F] {
+final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
+    session: Session[F],
+    redis: RedisCommands[F, String, String],
+    jwtUtils: JwtUtils[F],
+) extends AuthAlgebra[F] {
   given logger: Logger[F] = LoggerFactory.getLogger()
 
   override def login(loginDto: LoginDto): EitherT[F, BaseError, LoginData] = {
@@ -46,8 +51,34 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](session: Session[F]
         InvalidCredentialsError(),
       )
       accessToken  <- EitherT.right(jwtUtils.createAccessToken(user.id))
-      refreshToken <- EitherT.right(jwtUtils.createRefreshToken(user.id))
-    } yield LoginData(accessToken, refreshToken)
+      refreshToken <- EitherT.right(jwtUtils.createRefreshToken(accessToken))
+      _ <- EitherT.right(
+        redis.setEx(s"refreshToken:${user.id}", refreshToken, jwtUtils.config.refreshTokenExpTime.seconds),
+      )
+      accessTokenCookie <- EitherT.rightT(
+        ResponseCookie(
+          name = "accessToken",
+          content = accessToken,
+          httpOnly = true,
+          secure = true,
+          sameSite = Some(SameSite.Strict),
+          maxAge = Some(jwtUtils.config.accessTokenExpTime),
+        ),
+      )
+      refreshTokenCookie <- EitherT.rightT(
+        ResponseCookie(
+          name = "refreshToken",
+          content = refreshToken,
+          httpOnly = true,
+          secure = true,
+          sameSite = Some(SameSite.Strict),
+          maxAge = Some(jwtUtils.config.refreshTokenExpTime),
+        ),
+      )
+    } yield LoginData(
+      accessTokenCookie,
+      refreshTokenCookie,
+    )
   }
 
   override def signup(signupDto: SignupDto): EitherT[F, BaseError, Unit] = {
@@ -82,7 +113,11 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](session: Session[F]
 }
 
 object AuthAlgebraLive {
-  def apply[F[_]: Concurrent: LoggerFactory](session: Session[F], jwtUtils: JwtUtils[F]) =
-    new AuthAlgebraLive[F](session, jwtUtils)
+  def apply[F[_]: Concurrent: LoggerFactory](
+      session: Session[F],
+      redis: RedisCommands[F, String, String],
+      jwtUtils: JwtUtils[F],
+  ) =
+    new AuthAlgebraLive[F](session, redis, jwtUtils)
 
 }

@@ -13,6 +13,7 @@ import org.http4s.dsl.impl.*
 import org.http4s.server.*
 import org.typelevel.log4cats.LoggerFactory
 import skunk.Session
+import dev.profunktor.redis4cats.RedisCommands
 
 import cc.timeli.core.validation.authValidators.given
 import cc.timeli.core.validation.syntax.*
@@ -23,7 +24,6 @@ import cc.timeli.core.responses.responses.FailureRes
 import cc.timeli.core.utils.JwtUtils
 
 class AuthRoutes[F[_]: Concurrent: LoggerFactory](
-    session: Session[F],
     authAlgebra: AuthAlgebra[F],
 ) extends HttpValidationDsl[F] {
 
@@ -34,10 +34,13 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](
           .login(loginDto)
           .value
           .flatMap({
-            case Right(loginData) => Ok(loginData)
+            case Right(loginData) => {
+              Ok().map(_.addCookie(loginData.accessTokenCookie).addCookie(loginData.refreshTokenCookie))
+            }
             case Left(error: InvalidCredentialsError) =>
-              Forbidden(FailureRes(error.getClass().getSimpleName(), error.message, List()))
-            case Left(error) => BadRequest(FailureRes(error.getClass().getSimpleName(), error.message, List()))
+              Forbidden(FailureRes(error.getClass().getSimpleName().dropRight(1), error.message, List()))
+            case Left(error) =>
+              BadRequest(FailureRes(error.getClass().getSimpleName().dropRight(1), error.message, List()))
           }),
       )
   })
@@ -50,8 +53,8 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](
           .value
           .flatMap({
             case Right(_) => Ok()
-            case Left(AlreadyExistsError(message)) =>
-              BadRequest(FailureRes(AlreadyExistsError.getClass().getSimpleName().dropRight(1), message, List()))
+            case Left(error: InvalidCredentialsError) =>
+              Forbidden(FailureRes(error.getClass().getSimpleName().dropRight(1), error.message, List()))
             case Left(error) =>
               BadRequest(FailureRes(error.getClass().getSimpleName().dropRight(1), error.message, List()))
           }),
@@ -65,6 +68,8 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](
 }
 
 object AuthRoutes {
-  def apply[F[_]: Concurrent: LoggerFactory](session: Session[F], authAlgebra: AuthAlgebra[F]) =
-    new AuthRoutes(session, authAlgebra)
+  def apply[F[_]: Concurrent: LoggerFactory](
+      authAlgebra: AuthAlgebra[F],
+  ) =
+    new AuthRoutes(authAlgebra)
 }
