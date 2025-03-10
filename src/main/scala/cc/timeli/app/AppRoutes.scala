@@ -15,14 +15,15 @@ import cc.timeli.core.utils.JwtUtils
 import cc.timeli.app.HealthRoutes
 import cc.timeli.app.AuthRoutes
 import cc.timeli.algebra.auth.AuthAlgebraLive
+import cc.timeli.core.utils.RedisUtils
 
 class AppRoutes[F[_]: Concurrent: LoggerFactory](
     session: Session[F],
-    redis: RedisCommands[F, String, String],
+    redisUtils: RedisUtils[F],
     jwtUtils: JwtUtils[F],
 ) {
 
-  private val authAlgebra = AuthAlgebraLive[F](session, redis, jwtUtils)
+  private val authAlgebra = AuthAlgebraLive[F](session, redisUtils, jwtUtils)
 
   private val healthRoutes = HealthRoutes[F].routes
   private val authRoutes   = AuthRoutes[F](authAlgebra).routes
@@ -35,8 +36,8 @@ class AppRoutes[F[_]: Concurrent: LoggerFactory](
 object AppRoutes {
   def apply[F[_]: Concurrent: LoggerFactory](
       session: Session[F],
-      redis: RedisCommands[F, String, String],
+      redisUtils: RedisUtils[F],
       jwtUtils: JwtUtils[F],
   ) =
-    new AppRoutes[F](session, redis, jwtUtils)
+    new AppRoutes[F](session, redisUtils, jwtUtils)
 }

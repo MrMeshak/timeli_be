@@ -21,6 +21,7 @@ import cc.timeli.core.errors.BaseError
 import cc.timeli.core.errors.baseErrors.*
 import cc.timeli.core.domain.user.*
 import cc.timeli.core.utils.JwtUtils
+import cc.timeli.core.utils.RedisUtils
 import cc.timeli.core.logging.syntax.*
 
 trait AuthAlgebra[F[_]] {
@@ -30,7 +31,7 @@ trait AuthAlgebra[F[_]] {
 
 final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
     session: Session[F],
-    redis: RedisCommands[F, String, String],
+    redisUtils: RedisUtils[F],
     jwtUtils: JwtUtils[F],
 ) extends AuthAlgebra[F] {
   given logger: Logger[F] = LoggerFactory.getLogger()
@@ -52,9 +53,7 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
       )
       accessToken  <- EitherT.right(jwtUtils.createAccessToken(user.id))
       refreshToken <- EitherT.right(jwtUtils.createRefreshToken(accessToken))
-      _ <- EitherT.right(
-        redis.setEx(s"refreshToken:${user.id}", refreshToken, jwtUtils.config.refreshTokenExpTime.seconds),
-      )
+      _ <- EitherT.right(redisUtils.setRefreshToken(user.id, refreshToken, jwtUtils.config.refreshTokenExpTime.seconds))
       accessTokenCookie <- EitherT.rightT(
         ResponseCookie(
           name = "accessToken",
@@ -115,9 +114,9 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
 object AuthAlgebraLive {
   def apply[F[_]: Concurrent: LoggerFactory](
       session: Session[F],
-      redis: RedisCommands[F, String, String],
+      redisUtils: RedisUtils[F],
       jwtUtils: JwtUtils[F],
   ) =
-    new AuthAlgebraLive[F](session, redis, jwtUtils)
+    new AuthAlgebraLive[F](session, redisUtils, jwtUtils)
 
 }
