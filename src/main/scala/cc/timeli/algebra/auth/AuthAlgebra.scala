@@ -58,6 +58,7 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
         ResponseCookie(
           name = "accessToken",
           content = accessToken,
+          path = Some("/"),
           httpOnly = true,
           secure = true,
           sameSite = Some(SameSite.Strict),
@@ -68,6 +69,7 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
         ResponseCookie(
           name = "refreshToken",
           content = refreshToken,
+          path = Some("/"),
           httpOnly = true,
           secure = true,
           sameSite = Some(SameSite.Strict),

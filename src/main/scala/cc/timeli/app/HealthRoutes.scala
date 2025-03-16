@@ -12,10 +12,11 @@ import org.typelevel.log4cats.LoggerFactory
 
 class HealthRoutes[F[_]: Monad: LoggerFactory]() extends Http4sDsl[F] {
 
-  private val healthRoute: HttpRoutes[F] = HttpRoutes.of[F]({ case GET -> Root =>
-    for {
-      resp <- Ok("server running")
-    } yield resp
+  private val healthRoute: HttpRoutes[F] = HttpRoutes.of[F]({
+    case GET -> Root =>
+      for {
+        resp <- Ok("server running")
+      } yield resp
   })
 
   val routes = Router(
