@@ -1,0 +1,39 @@
+package cc.timeli.algebra.user
+
+import cats.effect.Concurrent
+import cats.data.EitherT
+import org.typelevel.log4cats.{Logger, LoggerFactory}
+import skunk.*
+import skunk.syntax.all.*
+import skunk.codec.all.*
+
+import cc.timeli.core.domain.user.*
+import cc.timeli.core.errors.BaseError
+import cc.timeli.algebra.user.userDtos.*
+import cc.timeli.core.errors.baseErrors.*
+
+trait UserAlgebra[F[_]] {
+  def userInfo(userInfoDto: UserInfoDto): EitherT[F, BaseError, UserInfoData]
+}
+
+final class UserAlgebraLive[F[_]: Concurrent: LoggerFactory](
+    session: Session[F],
+) extends UserAlgebra[F] {
+  given logger: Logger[F] = LoggerFactory.getLogger()
+
+  override def userInfo(userInfoDto: UserInfoDto): EitherT[F, BaseError, UserInfoData] = {
+    for {
+      query <- EitherT.right(session.prepare(sql"""SELECT * FROM users WHERE id = $uuid""".query(userCodec)))
+      user  <- EitherT.fromOptionF(query.option(userInfoDto.id), NotFoundError("User could not be found"))
+    } yield UserInfoData(
+      id = user.id,
+      email = user.email,
+      firstName = user.firstName,
+      lastName = user.lastName,
+    )
+  }
+}
+
+object UserAlgebraLive {
+  def apply[F[_]: Concurrent: LoggerFactory](session: Session[F]) = new UserAlgebraLive(session)
+}
