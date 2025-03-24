@@ -85,7 +85,8 @@ class AuthMP[F[_]: Concurrent: LoggerFactory](jwtUtils: JwtUtils[F], redisUtils:
       )
   }
 
-  def middleware(routes: AuthedRoutes[AuthContext, F]) = AuthMiddleware(authContextK).apply(cookieInterceptor(routes))
+  def middleware(routes: AuthedRoutes[AuthContext, F]) =
+    AuthMiddleware.withFallThrough(authContextK).apply(cookieInterceptor(routes))
 }
 
 object AuthMP {
