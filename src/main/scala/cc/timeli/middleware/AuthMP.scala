@@ -6,6 +6,8 @@ import cats.implicits.*
 import org.http4s.{Request, Response, AuthedRequest, AuthedRoutes, ResponseCookie, SameSite}
 import org.http4s.server.AuthMiddleware
 import org.typelevel.log4cats.{Logger, LoggerFactory}
+import io.circe.syntax.*
+import io.circe.generic.semiauto.*
 
 import java.util.UUID
 
@@ -24,7 +26,10 @@ class AuthMP[F[_]: Concurrent: LoggerFactory](jwtUtils: JwtUtils[F], redisUtils:
       accessToken        <- OptionT.fromOption(req.cookies.find(_.name == "accessToken").map(_.content))
       decodedAccessToken <- OptionT(jwtUtils.verifyAndParseAccessToken(accessToken))
       userId             <- OptionT.fromOption(decodedAccessToken.body.subject).map(UUID.fromString(_))
-      authContext        <- OptionT.some(AuthContext(userId, false))
+      permissions <- OptionT.fromOption(
+        decodedAccessToken.body.getCustom[String]("permissions").toOption.map(BigInt(_)),
+      )
+      authContext <- OptionT.some(AuthContext(userId, permissions, false))
     } yield authContext
 
     val authContextFromRefreshToken = for {
@@ -33,8 +38,11 @@ class AuthMP[F[_]: Concurrent: LoggerFactory](jwtUtils: JwtUtils[F], redisUtils:
       decodedRefreshToken <- OptionT(jwtUtils.verifyAndParseRefreshToken(refreshToken))
       refreshTokenSub     <- OptionT.fromOption(decodedRefreshToken.body.subject)
       _                   <- OptionT.when(refreshTokenSub == accessToken)(())
-      decodeAccessToken   <- OptionT(jwtUtils.parseUnverifiedAccessToken(refreshTokenSub))
-      userId              <- OptionT.fromOption(decodeAccessToken.body.subject).map(UUID.fromString(_))
+      decodedAccessToken  <- OptionT(jwtUtils.parseUnverifiedAccessToken(refreshTokenSub))
+      userId              <- OptionT.fromOption(decodedAccessToken.body.subject).map(UUID.fromString(_))
+      permissions <- OptionT.fromOption(
+        decodedAccessToken.body.getCustom[String]("permissions").toOption.map(BigInt(_)),
+      )
       setTokens <- OptionT(redisUtils.getRefreshToken(userId))
         .filter(_ == refreshToken)
         .semiflatTap(redisUtils.cacheRefreshToken(userId, _) *> redisUtils.deleteRefreshToken(userId))
@@ -44,7 +52,7 @@ class AuthMP[F[_]: Concurrent: LoggerFactory](jwtUtils: JwtUtils[F], redisUtils:
             .filter(_ == refreshToken)
             .map(_ => false),
         )
-      authContext <- OptionT.some(AuthContext(userId, setTokens))
+      authContext <- OptionT.some(AuthContext(userId, permissions, setTokens))
     } yield authContext
 
     authContextFromAccessToken.orElse(authContextFromRefreshToken)
@@ -56,7 +64,7 @@ class AuthMP[F[_]: Concurrent: LoggerFactory](jwtUtils: JwtUtils[F], redisUtils:
         if (!req.authInfo.setTokens) OptionT.some(resp)
         else {
           for {
-            accessToken  <- OptionT.liftF(jwtUtils.createAccessToken(req.authInfo.userId))
+            accessToken  <- OptionT.liftF(jwtUtils.createAccessToken(req.authInfo.userId, req.authInfo.permissions))
             refreshToken <- OptionT.liftF(jwtUtils.createRefreshToken(accessToken))
             accessTokenCookie <- OptionT.some(
               ResponseCookie(
@@ -94,4 +102,4 @@ object AuthMP {
     new AuthMP(jwtUtils, redisUtils)
 }
 
-case class AuthContext(userId: UUID, setTokens: Boolean) {}
+case class AuthContext(userId: UUID, permissions: BigInt, setTokens: Boolean) {}

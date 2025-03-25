@@ -5,6 +5,8 @@ import cats.implicits.*
 import tsec.jws.mac.JWTMac
 import tsec.mac.jca.{HMACSHA256, MacSigningKey}
 import tsec.jwt.{JWTClaims}
+import io.circe.syntax.*
+import io.circe.generic.semiauto.*
 
 import java.time.Instant
 import java.util.UUID
@@ -13,7 +15,7 @@ import cc.timeli.core.config.{JwtConfig}
 
 trait JwtUtils[F[_]] {
   def config: JwtConfig
-  def createAccessToken(id: UUID): F[String]
+  def createAccessToken(id: UUID, permissions: BigInt): F[String]
   def createRefreshToken(accessToken: String): F[String]
   def parseUnverifiedAccessToken(token: String): F[Option[JWTMac[HMACSHA256]]]
   def verifyAndParseAccessToken(token: String): F[Option[JWTMac[HMACSHA256]]]
@@ -24,12 +26,15 @@ final class JwtUtilsLive[F[_]: Sync](jwtConfig: JwtConfig) extends JwtUtils[F] {
 
   override def config: JwtConfig = jwtConfig;
 
-  override def createAccessToken(id: UUID): F[String] = for {
+  override def createAccessToken(id: UUID, permissions: BigInt): F[String] = for {
     secret <- HMACSHA256.buildKey[F](jwtConfig.accessTokenSecret.getBytes())
     claim <- JWTClaims(
       issuedAt = Some(Instant.now()),
       expiration = Some(Instant.now().plusSeconds(jwtConfig.accessTokenExpTime)),
       subject = Some(id.toString()),
+      customFields = Seq(
+        "permissions" -> permissions.toString.asJson,
+      ),
     ).pure
     token <- JWTMac.buildToString[F, HMACSHA256](claim, secret)
   } yield token

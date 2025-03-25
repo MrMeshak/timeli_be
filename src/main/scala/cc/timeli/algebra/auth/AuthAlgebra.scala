@@ -41,19 +41,25 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
       query <- EitherT.right(
         session
           .prepare(
-            sql"""SELECT * FROM users WHERE email = $varchar"""
-              .query(userCodec),
+            sql"""SELECT u.id, u.email, u.password, u.firstName, u.lastName, r.id, r.name, r.mask 
+                FROM users u 
+                INNER JOIN roles r ON u.roleId = r.id 
+                WHERE email = $varchar
+                """
+              .query(userWithRoleCodec),
           ),
       )
-      user <- EitherT.fromOptionF(query.option(loginDto.email), InvalidCredentialsError())
+      userWithRole <- EitherT.fromOptionF(query.option(loginDto.email), InvalidCredentialsError())
       _ <- EitherT.cond(
-        BCrypt.verifyer().verify(loginDto.password.toCharArray(), user.password).verified,
+        BCrypt.verifyer().verify(loginDto.password.toCharArray(), userWithRole.user.password).verified,
         (),
         InvalidCredentialsError(),
       )
-      accessToken  <- EitherT.right(jwtUtils.createAccessToken(user.id))
+      accessToken  <- EitherT.right(jwtUtils.createAccessToken(userWithRole.user.id, userWithRole.role.mask))
       refreshToken <- EitherT.right(jwtUtils.createRefreshToken(accessToken))
-      _ <- EitherT.right(redisUtils.setRefreshToken(user.id, refreshToken, jwtUtils.config.refreshTokenExpTime.seconds))
+      _ <- EitherT.right(
+        redisUtils.setRefreshToken(userWithRole.user.id, refreshToken, jwtUtils.config.refreshTokenExpTime.seconds),
+      )
       accessTokenCookie <- EitherT.rightT(
         ResponseCookie(
           name = "accessToken",

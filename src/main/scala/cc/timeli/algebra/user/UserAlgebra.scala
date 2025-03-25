@@ -23,8 +23,12 @@ final class UserAlgebraLive[F[_]: Concurrent: LoggerFactory](
 
   override def userInfo(userInfoDto: UserInfoDto): EitherT[F, BaseError, UserInfoData] = {
     for {
-      query <- EitherT.right(session.prepare(sql"""SELECT * FROM users WHERE id = $uuid""".query(userCodec)))
-      user  <- EitherT.fromOptionF(query.option(userInfoDto.id), NotFoundError("User could not be found"))
+      query <- EitherT.right(
+        session.prepare(
+          sql"""SELECT id, email, password, firstName, lastName FROM users WHERE id = $uuid""".query(userCodec),
+        ),
+      )
+      user <- EitherT.fromOptionF(query.option(userInfoDto.id), NotFoundError("User could not be found"))
     } yield UserInfoData(
       id = user.id,
       email = user.email,
