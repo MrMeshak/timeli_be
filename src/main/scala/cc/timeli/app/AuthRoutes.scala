@@ -38,9 +38,9 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](
               Ok().map(_.addCookie(loginData.accessTokenCookie).addCookie(loginData.refreshTokenCookie))
             }
             case Left(error: InvalidCredentialsError) =>
-              Forbidden(FailureRes(error.getClass().getSimpleName().dropRight(1), error.message, List()))
+              Forbidden(FailureRes(error.getClass().getSimpleName().replace("$", ""), error.message, List()))
             case Left(error) =>
-              BadRequest(FailureRes(error.getClass().getSimpleName().dropRight(1), error.message, List()))
+              BadRequest(FailureRes(error.getClass().getSimpleName().replace("$", ""), error.message, List()))
           }),
       )
   })
@@ -54,9 +54,9 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](
           .flatMap({
             case Right(_) => Ok()
             case Left(error: InvalidCredentialsError) =>
-              Forbidden(FailureRes(error.getClass().getSimpleName().dropRight(1), error.message, List()))
+              Forbidden(FailureRes(error.getClass().getSimpleName().replace("$", ""), error.message, List()))
             case Left(error) =>
-              BadRequest(FailureRes(error.getClass().getSimpleName().dropRight(1), error.message, List()))
+              BadRequest(FailureRes(error.getClass().getSimpleName().replace("$", ""), error.message, List()))
           }),
       )
   })
