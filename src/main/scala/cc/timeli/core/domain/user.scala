@@ -8,9 +8,9 @@ import skunk.codec.all.*
 import io.circe.{Encoder, Decoder, Json}
 import io.circe.generic.semiauto.*
 
-import cc.timeli.core.domain.role.*
-
 import java.util.UUID
+
+import cc.timeli.core.domain.role.*
 
 object user {
 

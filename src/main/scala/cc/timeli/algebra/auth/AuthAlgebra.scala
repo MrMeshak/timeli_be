@@ -103,7 +103,11 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
             case None    => Right(())
           }),
       )
-      command <- EitherT.right(session.prepare(sql"""INSERT INTO users VALUES ($userCodec)""".command))
+      command <- EitherT.right(
+        session.prepare(
+          sql"""INSERT INTO users VALUES ($userCodec, DEFAULT, (SELECT id FROM roles WHERE name = 'USER'))""".command,
+        ),
+      )
       _ <- EitherT.right(
         command.execute(
           User(
