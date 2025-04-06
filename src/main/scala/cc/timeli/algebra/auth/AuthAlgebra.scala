@@ -27,6 +27,7 @@ import cc.timeli.core.logging.syntax.*
 trait AuthAlgebra[F[_]] {
   def login(loginDto: LoginDto): EitherT[F, BaseError, LoginData]
   def signup(signupDto: SignupDto): EitherT[F, BaseError, Unit]
+  def logout(logoutDto: LogoutDto): EitherT[F, BaseError, LogoutData]
 }
 
 final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
@@ -121,6 +122,35 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
       )
     } yield ()
   }
+
+  override def logout(logoutDto: LogoutDto): EitherT[F, BaseError, LogoutData] = {
+    for {
+      _ <- EitherT.right(redisUtils.deleteRefreshToken(logoutDto.userId))
+      accessTokenCookieEmpty <- EitherT.rightT(
+        ResponseCookie(
+          name = "accessToken",
+          content = "",
+          path = Some("/"),
+          httpOnly = true,
+          secure = true,
+          sameSite = Some(SameSite.Strict),
+          maxAge = Some(0),
+        ),
+      )
+      refreshTokenCookieEmpty <- EitherT.rightT(
+        ResponseCookie(
+          name = "refreshToken",
+          content = "",
+          path = Some("/"),
+          httpOnly = true,
+          secure = true,
+          sameSite = Some(SameSite.Strict),
+          maxAge = Some(0),
+        ),
+      )
+    } yield LogoutData(accessTokenCookieEmpty, refreshTokenCookieEmpty)
+  }
+
 }
 
 object AuthAlgebraLive {

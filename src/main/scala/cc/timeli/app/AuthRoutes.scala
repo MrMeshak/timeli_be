@@ -15,15 +15,17 @@ import org.typelevel.log4cats.LoggerFactory
 import skunk.Session
 import dev.profunktor.redis4cats.RedisCommands
 
+import cc.timeli.middleware.{AuthMP, AuthContext}
 import cc.timeli.core.validation.authValidators.given
 import cc.timeli.core.validation.syntax.*
 import cc.timeli.core.errors.baseErrors.*
-import cc.timeli.algebra.auth.authDtos.{LoginDto, SignupDto}
+import cc.timeli.algebra.auth.authDtos.{LoginDto, SignupDto, LogoutDto}
 import cc.timeli.algebra.auth.AuthAlgebra
 import cc.timeli.core.responses.responses.FailureRes
 import cc.timeli.core.utils.JwtUtils
 
 class AuthRoutes[F[_]: Concurrent: LoggerFactory](
+    authMP: AuthMP[F],
     authAlgebra: AuthAlgebra[F],
 ) extends HttpValidationDsl[F] {
 
@@ -61,15 +63,29 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](
       )
   })
 
+  private val logoutRoute: AuthedRoutes[AuthContext, F] = AuthedRoutes.of[AuthContext, F]({
+    case req @ POST -> Root / "logout" as authContext =>
+      authAlgebra
+        .logout(LogoutDto(authContext.userId))
+        .value
+        .flatMap({
+          case Right(logoutData) =>
+            Ok().map(_.addCookie(logoutData.accessTokenCookieEmpty).addCookie(logoutData.refreshTokenCookieEmpty))
+          case Left(error) =>
+            BadRequest(FailureRes(error.getClass().getSimpleName().replace("$", ""), error.message, List()))
+        })
+  })
+
   val routes: HttpRoutes[F] = Router(
-    "auth" -> (loginRoute <+> signupRoute),
+    "auth" -> (loginRoute <+> signupRoute <+> authMP.middleware(logoutRoute)),
   )
 
 }
 
 object AuthRoutes {
   def apply[F[_]: Concurrent: LoggerFactory](
+      authMP: AuthMP[F],
       authAlgebra: AuthAlgebra[F],
   ) =
-    new AuthRoutes(authAlgebra)
+    new AuthRoutes(authMP, authAlgebra)
 }

@@ -30,7 +30,7 @@ class AppRoutes[F[_]: Concurrent: LoggerFactory](
   private val userAlgebra = UserAlgebraLive[F](session)
 
   private val healthRoutes = HealthRoutes[F].routes
-  private val authRoutes   = AuthRoutes[F](authAlgebra).routes
+  private val authRoutes   = AuthRoutes[F](authMP, authAlgebra).routes
   private val userRoutes   = UserRoutes[F](authMP, userAlgebra).routes
 
   val routes = Router(
