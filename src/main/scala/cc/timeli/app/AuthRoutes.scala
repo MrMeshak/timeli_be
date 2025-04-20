@@ -12,14 +12,16 @@ import org.http4s.dsl.*
 import org.http4s.dsl.impl.*
 import org.http4s.server.*
 import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.Logger
 import skunk.Session
 import dev.profunktor.redis4cats.RedisCommands
 
+import cc.timeli.core.logging.syntax.*
 import cc.timeli.middleware.{AuthMP, AuthContext}
 import cc.timeli.core.validation.authValidators.given
 import cc.timeli.core.validation.syntax.*
 import cc.timeli.core.errors.baseErrors.*
-import cc.timeli.algebra.auth.authDtos.{LoginDto, SignupDto, LogoutDto}
+import cc.timeli.algebra.auth.authDtos.{LoginDto, SignupDto, LogoutDto, PasswordResetRequestDto}
 import cc.timeli.algebra.auth.AuthAlgebra
 import cc.timeli.core.responses.responses.FailureRes
 import cc.timeli.core.utils.JwtUtils
@@ -28,6 +30,7 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](
     authMP: AuthMP[F],
     authAlgebra: AuthAlgebra[F],
 ) extends HttpValidationDsl[F] {
+  given logger1: Logger[F] = LoggerFactory[F].getLogger()
 
   private val loginRoute: HttpRoutes[F] = HttpRoutes.of[F]({
     case req @ POST -> Root / "login" =>
@@ -76,10 +79,28 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](
         })
   })
 
-  val routes: HttpRoutes[F] = Router(
-    "auth" -> (loginRoute <+> signupRoute <+> authMP.middleware(logoutRoute)),
-  )
+  private val passwordResetRequestRoute: HttpRoutes[F] = HttpRoutes.of[F]({
+    case req @ POST -> Root / "passwordResetRequest" =>
+      authAlgebra
+        .passwordResetRequest(PasswordResetRequestDto("mr.meshakbain@gmail.com"))
+        .value
+        .log(
+          {
+            case Right(_) => "ok"
+            case Left(e)  => "Base error"
+          },
+          error => error.getMessage(),
+        )
+        .flatMap({
+          case Right(r) => Ok(r.toString())
+          case Left(error) =>
+            BadRequest(FailureRes(error.getClass().getSimpleName().replace("$", ""), error.message, List()))
+        })
+  })
 
+  val routes: HttpRoutes[F] = Router(
+    "auth" -> (loginRoute <+> signupRoute <+> passwordResetRequestRoute <+> authMP.middleware(logoutRoute)),
+  )
 }
 
 object AuthRoutes {

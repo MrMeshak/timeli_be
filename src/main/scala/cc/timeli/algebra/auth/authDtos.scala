@@ -19,4 +19,6 @@ object authDtos {
   case class LogoutDto(userId: UUID)
   case class LogoutData(accessTokenCookieEmpty: ResponseCookie, refreshTokenCookieEmpty: ResponseCookie)
 
+  case class PasswordResetRequestDto(email: String)
+
 }

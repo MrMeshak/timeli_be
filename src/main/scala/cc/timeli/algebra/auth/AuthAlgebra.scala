@@ -11,7 +11,9 @@ import skunk.syntax.all.*
 import skunk.codec.all.*
 import org.http4s.{ResponseCookie, SameSite}
 import org.typelevel.log4cats.{Logger, LoggerFactory}
-import dev.profunktor.redis4cats.RedisCommands
+import pencil.{Client => MailClient}
+import pencil.*
+import pencil.syntax.*
 
 import at.favre.lib.crypto.bcrypt.BCrypt
 import java.util.UUID
@@ -23,15 +25,21 @@ import cc.timeli.core.domain.user.*
 import cc.timeli.core.utils.JwtUtils
 import cc.timeli.core.utils.RedisUtils
 import cc.timeli.core.logging.syntax.*
+import pencil.data.Email
+import pencil.data.Mailbox
+import pencil.data.Body
+import pencil.protocol.Replies
 
 trait AuthAlgebra[F[_]] {
   def login(loginDto: LoginDto): EitherT[F, BaseError, LoginData]
   def signup(signupDto: SignupDto): EitherT[F, BaseError, Unit]
   def logout(logoutDto: LogoutDto): EitherT[F, BaseError, LogoutData]
+  def passwordResetRequest(passwordResetRequestDto: PasswordResetRequestDto): EitherT[F, BaseError, Replies]
 }
 
 final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
     session: Session[F],
+    mailer: MailClient[F],
     redisUtils: RedisUtils[F],
     jwtUtils: JwtUtils[F],
 ) extends AuthAlgebra[F] {
@@ -151,14 +159,31 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
     } yield LogoutData(accessTokenCookieEmpty, refreshTokenCookieEmpty)
   }
 
+  override def passwordResetRequest(
+      passwordResetRequestDto: PasswordResetRequestDto,
+  ): EitherT[F, BaseError, Replies] = {
+    for {
+      _ <- EitherT.rightT(println("password reset"))
+      replies <- EitherT.right(
+        mailer.send(
+          Email.mime(
+            From(Mailbox("mail", "timeli.cc")),
+            To(Mailbox("mr.meshakbain", "gmail.com")),
+            Subject("hello"),
+            Body.Utf8("password reset test email"),
+          ),
+        ),
+      )
+    } yield replies
+  }.log(r => r.toString(), e => "errors")
 }
 
 object AuthAlgebraLive {
   def apply[F[_]: Concurrent: LoggerFactory](
       session: Session[F],
+      mailer: MailClient[F],
       redisUtils: RedisUtils[F],
       jwtUtils: JwtUtils[F],
   ) =
-    new AuthAlgebraLive[F](session, redisUtils, jwtUtils)
-
+    new AuthAlgebraLive[F](session, mailer, redisUtils, jwtUtils)
 }

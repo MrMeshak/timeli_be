@@ -10,23 +10,25 @@ import dev.profunktor.redis4cats.RedisCommands
 
 import org.typelevel.log4cats.LoggerFactory
 import skunk.Session
+import pencil.{Client => MailClient}
 
-import cc.timeli.core.utils.JwtUtils
 import cc.timeli.app.HealthRoutes
 import cc.timeli.app.AuthRoutes
 import cc.timeli.algebra.auth.AuthAlgebraLive
 import cc.timeli.core.utils.RedisUtils
+import cc.timeli.core.utils.JwtUtils
 import cc.timeli.middleware.AuthMP
 import cc.timeli.algebra.user.UserAlgebraLive
 
 class AppRoutes[F[_]: Concurrent: LoggerFactory](
     session: Session[F],
+    mailer: MailClient[F],
     redisUtils: RedisUtils[F],
     jwtUtils: JwtUtils[F],
 ) {
 
   private val authMP      = AuthMP(jwtUtils, redisUtils)
-  private val authAlgebra = AuthAlgebraLive[F](session, redisUtils, jwtUtils)
+  private val authAlgebra = AuthAlgebraLive[F](session, mailer, redisUtils, jwtUtils)
   private val userAlgebra = UserAlgebraLive[F](session)
 
   private val healthRoutes = HealthRoutes[F].routes
@@ -41,8 +43,9 @@ class AppRoutes[F[_]: Concurrent: LoggerFactory](
 object AppRoutes {
   def apply[F[_]: Concurrent: LoggerFactory](
       session: Session[F],
+      mailer: MailClient[F],
       redisUtils: RedisUtils[F],
       jwtUtils: JwtUtils[F],
   ) =
-    new AppRoutes[F](session, redisUtils, jwtUtils)
+    new AppRoutes[F](session, mailer, redisUtils, jwtUtils)
 }
