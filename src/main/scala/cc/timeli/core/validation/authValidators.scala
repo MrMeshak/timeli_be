@@ -31,4 +31,13 @@ object authValidators {
     }
   }
 
+  given passwordForgotDtoValidator: Validator[PasswordForgotDto] with {
+    override def validate(value: PasswordForgotDto): ValidatedNel[ValidationFailure, PasswordForgotDto] = {
+      val PasswordForgotDto(email) = value
+
+      (
+        validateEmail(email, "email")
+      ).map(PasswordForgotDto.apply)
+    }
+  }
 }

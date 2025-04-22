@@ -44,13 +44,7 @@ object Main extends IOApp.Simple {
         .default[IO]
         .withHost(serverConfig.host)
         .withPort(serverConfig.port)
-        .withHttpApp(
-          CORS.policy
-            .withAllowOriginHost(Set(Origin.Host(Uri.Scheme.http, Uri.RegName(corsConfig.host), Some(corsConfig.port))))
-            .withAllowCredentials(true)
-            .apply(AppRoutes[IO](session, mailer, redisUtils, jwtUtils).routes)
-            .orNotFound,
-        )
+        .withHttpApp(AppRoutes[IO](session, mailer, redisUtils, jwtUtils).routes.orNotFound)
         .build
     } yield server
 

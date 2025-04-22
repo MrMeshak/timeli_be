@@ -34,7 +34,7 @@ trait AuthAlgebra[F[_]] {
   def login(loginDto: LoginDto): EitherT[F, BaseError, LoginData]
   def signup(signupDto: SignupDto): EitherT[F, BaseError, Unit]
   def logout(logoutDto: LogoutDto): EitherT[F, BaseError, LogoutData]
-  def passwordResetRequest(passwordResetRequestDto: PasswordResetRequestDto): EitherT[F, BaseError, Replies]
+  def passwordForgot(passwordForgotDto: PasswordForgotDto): EitherT[F, BaseError, Replies]
 }
 
 final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
@@ -159,16 +159,18 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
     } yield LogoutData(accessTokenCookieEmpty, refreshTokenCookieEmpty)
   }
 
-  override def passwordResetRequest(
-      passwordResetRequestDto: PasswordResetRequestDto,
+  override def passwordForgot(
+      passwordForgotDto: PasswordForgotDto,
   ): EitherT[F, BaseError, Replies] = {
     for {
-      _ <- EitherT.rightT(println("password reset"))
+      toMailbox <- EitherT.fromEither(
+        Mailbox.fromString(passwordForgotDto.email).leftMap(_ => InvalidDtoError("Invalid email")),
+      )
       replies <- EitherT.right(
         mailer.send(
           Email.mime(
             From(Mailbox("mail", "timeli.cc")),
-            To(Mailbox("mr.meshakbain", "gmail.com")),
+            To(toMailbox),
             Subject("hello"),
             Body.Utf8("password reset test email"),
           ),
