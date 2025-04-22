@@ -9,14 +9,11 @@ import pureconfig.ConfigSource
 import skunk.Session
 import natchez.Trace.Implicits.noop
 import org.http4s.ember.server.EmberServerBuilder
-import org.http4s.server.middleware.CORS
-import org.http4s.headers.Origin
-import org.http4s.Uri
 import dev.profunktor.redis4cats.Redis
 import dev.profunktor.redis4cats.effect.Log.Stdout.given
 
 import cc.timeli.core.config.syntax.*
-import cc.timeli.core.config.{DbConfig, ServerConfig, JwtConfig, RedisConfig, MailConfig, CorsConfig}
+import cc.timeli.core.config.{BaseConfig, DbConfig, ServerConfig, JwtConfig, RedisConfig, MailConfig}
 import cc.timeli.core.db.Db
 import cc.timeli.core.mail.Mail
 import cc.timeli.core.utils.{JwtUtils, JwtUtilsLive}
@@ -29,12 +26,12 @@ object Main extends IOApp.Simple {
 
   override def run: IO[Unit] = {
     val serverR = for {
+      baseConfig   <- Resource.eval(ConfigSource.default.at("base").loadF[IO, BaseConfig])
       serverConfig <- Resource.eval(ConfigSource.default.at("server").loadF[IO, ServerConfig])
       dbConfig     <- Resource.eval(ConfigSource.default.at("db").loadF[IO, DbConfig])
       jwtConfig    <- Resource.eval(ConfigSource.default.at("jwt").loadF[IO, JwtConfig])
       redisConfig  <- Resource.eval(ConfigSource.default.at("redis").loadF[IO, RedisConfig])
       mailConfig   <- Resource.eval(ConfigSource.default.at("mail").loadF[IO, MailConfig])
-      corsConfig   <- Resource.eval(ConfigSource.default.at("cors").loadF[IO, CorsConfig])
       session      <- Db.single[IO](dbConfig)
       redis        <- Redis[IO].utf8(redisConfig.url)
       mailer       <- Resource.eval(Mail.mailer[IO](mailConfig))
@@ -44,7 +41,7 @@ object Main extends IOApp.Simple {
         .default[IO]
         .withHost(serverConfig.host)
         .withPort(serverConfig.port)
-        .withHttpApp(AppRoutes[IO](session, mailer, redisUtils, jwtUtils).routes.orNotFound)
+        .withHttpApp(AppRoutes[IO](baseConfig, session, mailer, redisUtils, jwtUtils).routes.orNotFound)
         .build
     } yield server
 

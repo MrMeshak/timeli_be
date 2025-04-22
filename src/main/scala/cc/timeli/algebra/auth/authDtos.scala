@@ -20,5 +20,6 @@ object authDtos {
   case class LogoutData(accessTokenCookieEmpty: ResponseCookie, refreshTokenCookieEmpty: ResponseCookie)
 
   case class PasswordForgotDto(email: String)
+  object PasswordForgotDto { given Decoder[PasswordForgotDto] = deriveDecoder[PasswordForgotDto] }
 
 }

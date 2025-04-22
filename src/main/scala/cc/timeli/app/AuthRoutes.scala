@@ -21,7 +21,7 @@ import cc.timeli.middleware.{AuthMP, AuthContext}
 import cc.timeli.core.validation.authValidators.given
 import cc.timeli.core.validation.syntax.*
 import cc.timeli.core.errors.baseErrors.*
-import cc.timeli.algebra.auth.authDtos.{LoginDto, SignupDto, LogoutDto, PasswordResetRequestDto}
+import cc.timeli.algebra.auth.authDtos.{LoginDto, SignupDto, LogoutDto, PasswordForgotDto}
 import cc.timeli.algebra.auth.AuthAlgebra
 import cc.timeli.core.responses.responses.FailureRes
 import cc.timeli.core.utils.JwtUtils
@@ -79,27 +79,25 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](
         })
   })
 
-  private val passwordResetRequestRoute: HttpRoutes[F] = HttpRoutes.of[F]({
-    case req @ POST -> Root / "passwordResetRequest" =>
-      authAlgebra
-        .passwordResetRequest(PasswordResetRequestDto("mr.meshakbain@gmail.com"))
-        .value
-        .log(
-          {
-            case Right(_) => "ok"
-            case Left(e)  => "Base error"
-          },
-          error => error.getMessage(),
-        )
-        .flatMap({
-          case Right(r) => Ok(r.toString())
-          case Left(error) =>
-            BadRequest(FailureRes(error.getClass().getSimpleName().replace("$", ""), error.message, List()))
-        })
+  private val passwordForgotRoute: HttpRoutes[F] = HttpRoutes.of[F]({
+    case req @ POST -> Root / "passwordForgot" =>
+      req.validate[PasswordForgotDto](passwordForgotDto =>
+        authAlgebra
+          .passwordForgot(passwordForgotDto)
+          .value
+          .flatTap({
+            case Right(_)    => ().pure
+            case Left(error) => logger.info(error.getClass().getSimpleName().replace("$", "") + " : " + error.message)
+          })
+          .flatMap({
+            case Right(_) => Ok()
+            case Left(_)  => Ok()
+          }),
+      )
   })
 
   val routes: HttpRoutes[F] = Router(
-    "auth" -> (loginRoute <+> signupRoute <+> passwordResetRequestRoute <+> authMP.middleware(logoutRoute)),
+    "auth" -> (loginRoute <+> signupRoute <+> passwordForgotRoute <+> authMP.middleware(logoutRoute)),
   )
 }
 

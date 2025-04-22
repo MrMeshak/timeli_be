@@ -15,6 +15,5 @@ object syntax {
       case Left(e)  => logger.error(error(e))
       case Right(_) => ().pure[F]
     })
-
   }
 }

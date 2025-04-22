@@ -12,12 +12,14 @@ import skunk.codec.all.*
 import org.http4s.{ResponseCookie, SameSite}
 import org.typelevel.log4cats.{Logger, LoggerFactory}
 import pencil.{Client => MailClient}
-import pencil.*
-import pencil.syntax.*
+import pencil.data.Email
+import pencil.data.Mailbox
+import pencil.protocol.Replies
 
 import at.favre.lib.crypto.bcrypt.BCrypt
 import java.util.UUID
 
+import cc.timeli.core.config.BaseConfig
 import cc.timeli.algebra.auth.authDtos.*
 import cc.timeli.core.errors.BaseError
 import cc.timeli.core.errors.baseErrors.*
@@ -25,10 +27,7 @@ import cc.timeli.core.domain.user.*
 import cc.timeli.core.utils.JwtUtils
 import cc.timeli.core.utils.RedisUtils
 import cc.timeli.core.logging.syntax.*
-import pencil.data.Email
-import pencil.data.Mailbox
-import pencil.data.Body
-import pencil.protocol.Replies
+import cc.timeli.core.mail.templates
 
 trait AuthAlgebra[F[_]] {
   def login(loginDto: LoginDto): EitherT[F, BaseError, LoginData]
@@ -38,6 +37,7 @@ trait AuthAlgebra[F[_]] {
 }
 
 final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
+    baseConfig: BaseConfig,
     session: Session[F],
     mailer: MailClient[F],
     redisUtils: RedisUtils[F],
@@ -163,29 +163,42 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
       passwordForgotDto: PasswordForgotDto,
   ): EitherT[F, BaseError, Replies] = {
     for {
+      query <- EitherT.right(
+        session.prepare(
+          sql"""SELECT id, email, password, firstName, lastName FROM users WHERE email = $varchar""".query(userCodec),
+        ),
+      )
+      user <- EitherT.fromOptionF(query.option(passwordForgotDto.email), NotFoundError("User could not be found"))
+      passwordResetToken <- EitherT.right(jwtUtils.createPasswordResetToken(user.id))
+      _ <- EitherT.right(
+        redisUtils.setPasswordResetToken(
+          user.id,
+          passwordResetToken,
+          jwtUtils.config.passwordResetTokenExpTime.seconds,
+        ),
+      )
       toMailbox <- EitherT.fromEither(
-        Mailbox.fromString(passwordForgotDto.email).leftMap(_ => InvalidDtoError("Invalid email")),
+        Mailbox.fromString(passwordForgotDto.email).leftMap(_ => InvalidInputError("Invalid email format")),
       )
       replies <- EitherT.right(
         mailer.send(
-          Email.mime(
-            From(Mailbox("mail", "timeli.cc")),
-            To(toMailbox),
-            Subject("hello"),
-            Body.Utf8("password reset test email"),
+          templates.passwordResetEmail(
+            toMailbox,
+            baseConfig.timeliFeUrl + s"/auth/passwordReset?token=${passwordResetToken}",
           ),
         ),
       )
     } yield replies
-  }.log(r => r.toString(), e => "errors")
+  }
 }
 
 object AuthAlgebraLive {
   def apply[F[_]: Concurrent: LoggerFactory](
+      baseConfig: BaseConfig,
       session: Session[F],
       mailer: MailClient[F],
       redisUtils: RedisUtils[F],
       jwtUtils: JwtUtils[F],
   ) =
-    new AuthAlgebraLive[F](session, mailer, redisUtils, jwtUtils)
+    new AuthAlgebraLive[F](baseConfig, session, mailer, redisUtils, jwtUtils)
 }

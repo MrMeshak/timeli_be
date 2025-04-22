@@ -17,9 +17,11 @@ trait JwtUtils[F[_]] {
   def config: JwtConfig
   def createAccessToken(id: UUID, permissions: BigInt): F[String]
   def createRefreshToken(accessToken: String): F[String]
+  def createPasswordResetToken(uuid: UUID): F[String]
   def parseUnverifiedAccessToken(token: String): F[Option[JWTMac[HMACSHA256]]]
   def verifyAndParseAccessToken(token: String): F[Option[JWTMac[HMACSHA256]]]
   def verifyAndParseRefreshToken(token: String): F[Option[JWTMac[HMACSHA256]]]
+  def verifyAndParsePasswordResetToken(token: String): F[Option[JWTMac[HMACSHA256]]]
 }
 
 final class JwtUtilsLive[F[_]: Sync](jwtConfig: JwtConfig) extends JwtUtils[F] {
@@ -49,6 +51,16 @@ final class JwtUtilsLive[F[_]: Sync](jwtConfig: JwtConfig) extends JwtUtils[F] {
     token <- JWTMac.buildToString[F, HMACSHA256](claim, secret)
   } yield token
 
+  override def createPasswordResetToken(id: UUID): F[String] = for {
+    secret <- HMACSHA256.buildKey[F](jwtConfig.passwordResetTokenSecret.getBytes())
+    claim <- JWTClaims(
+      issuedAt = Some(Instant.now()),
+      expiration = Some(Instant.now().plusSeconds(jwtConfig.passwordResetTokenExpTime)),
+      subject = Some(id.toString),
+    ).pure
+    token <- JWTMac.buildToString[F, HMACSHA256](claim, secret)
+  } yield token
+
   override def parseUnverifiedAccessToken(token: String): F[Option[JWTMac[HMACSHA256]]] = for {
     secret       <- HMACSHA256.buildKey[F](jwtConfig.accessTokenSecret.getBytes())
     decodedToken <- JWTMac.parseUnverified[F, HMACSHA256](token).attempt
@@ -61,6 +73,11 @@ final class JwtUtilsLive[F[_]: Sync](jwtConfig: JwtConfig) extends JwtUtils[F] {
 
   override def verifyAndParseRefreshToken(token: String): F[Option[JWTMac[HMACSHA256]]] = for {
     secret       <- HMACSHA256.buildKey[F](jwtConfig.refreshTokenSecret.getBytes())
+    decodedToken <- JWTMac.verifyAndParse[F, HMACSHA256](token, secret).attempt
+  } yield decodedToken.toOption
+
+  override def verifyAndParsePasswordResetToken(token: String): F[Option[JWTMac[HMACSHA256]]] = for {
+    secret       <- HMACSHA256.buildKey[F](jwtConfig.passwordResetTokenSecret.getBytes())
     decodedToken <- JWTMac.verifyAndParse[F, HMACSHA256](token, secret).attempt
   } yield decodedToken.toOption
 

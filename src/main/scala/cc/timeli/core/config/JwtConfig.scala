@@ -8,4 +8,6 @@ final case class JwtConfig(
     accessTokenExpTime: Int,
     refreshTokenSecret: String,
     refreshTokenExpTime: Int,
+    passwordResetTokenSecret: String,
+    passwordResetTokenExpTime: Int,
 ) derives ConfigReader {}
