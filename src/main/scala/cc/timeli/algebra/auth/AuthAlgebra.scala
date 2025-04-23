@@ -3,7 +3,7 @@ package cc.timeli.algebra.auth
 import scala.concurrent.duration.*
 
 import cats.effect.Concurrent
-import cats.data.EitherT
+import cats.data.{EitherT, OptionT}
 import cats.implicits.*
 import cats.syntax.*
 import skunk.*
@@ -34,6 +34,7 @@ trait AuthAlgebra[F[_]] {
   def signup(signupDto: SignupDto): EitherT[F, BaseError, Unit]
   def logout(logoutDto: LogoutDto): EitherT[F, BaseError, LogoutData]
   def passwordForgot(passwordForgotDto: PasswordForgotDto): EitherT[F, BaseError, Replies]
+  def passwordReset(passwordResetDto: PasswordResetDto): EitherT[F, BaseError, Unit]
 }
 
 final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
@@ -194,6 +195,36 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
         ),
       )
     } yield replies
+  }
+
+  override def passwordReset(passwordResetDto: PasswordResetDto): EitherT[F, BaseError, Unit] = {
+    for {
+      decodedToken <- EitherT.fromOptionF(
+        jwtUtils.verifyAndParsePasswordResetToken(passwordResetDto.token),
+        InvalidTokenError("Password reset link is expired or invalid"),
+      )
+      userId <- EitherT.fromOption(
+        decodedToken.body.subject.map(UUID.fromString),
+        InvalidTokenError("Password reset link is expired or invalid"),
+      )
+      _ <- EitherT.fromOptionF(
+        OptionT(redisUtils.getPasswordResetToken(userId))
+          .filter(_ == passwordResetDto.token)
+          .semiflatTap(_ => redisUtils.deletePasswordResetToken(userId))
+          .value,
+        InvalidTokenError("Password reset link is expired or invalid"),
+      )
+
+      command <- EitherT.right(
+        session.prepare(sql"""UPDATE users SET password = $text WHERE id = $uuid""".command),
+      )
+      _ <- EitherT.right(
+        command.execute(
+          BCrypt.withDefaults().hashToString(12, passwordResetDto.password.toCharArray()),
+          userId,
+        ),
+      )
+    } yield ()
   }
 }
 
