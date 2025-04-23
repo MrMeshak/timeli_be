@@ -91,7 +91,9 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](
           })
           .flatMap({
             case Right(_) => Ok()
-            case Left(_)  => Ok()
+            case Left(error: RateLimitedError) =>
+              BadRequest(FailureRes(error.getClass().getSimpleName().replace("$", ""), error.message, List()))
+            case Left(_) => Ok()
           }),
       )
   })

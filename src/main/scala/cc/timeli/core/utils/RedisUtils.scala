@@ -3,6 +3,7 @@ package cc.timeli.core.utils
 import scala.concurrent.duration.*
 
 import cats.effect.Async
+import cats.implicits.*
 import dev.profunktor.redis4cats.{RedisCommands}
 
 import java.util.UUID
@@ -18,6 +19,7 @@ trait RedisUtils[F[_]] {
   def setPasswordResetToken(userId: UUID, token: String, exp: FiniteDuration): F[Unit]
   def getPasswordResetToken(userId: UUID): F[Option[String]]
   def deletePasswordResetToken(userId: UUID): F[Long]
+  def isWithinRateLimitPasswordForget(email: String, limit: Long, exp: FiniteDuration): F[Boolean]
 }
 
 final class RedisUtilsLive[F[_]: Async](redis: RedisCommands[F, String, String]) extends RedisUtils[F] {
@@ -46,6 +48,10 @@ final class RedisUtilsLive[F[_]: Async](redis: RedisCommands[F, String, String])
   override def deletePasswordResetToken(userId: UUID): F[Long] =
     redis.del(s"passwordResetToken:userId:${userId}")
 
+  override def isWithinRateLimitPasswordForget(email: String, limit: Long, exp: FiniteDuration): F[Boolean] = for {
+    count <- redis.incr(s"rateLimit:passwordForget:email:${email}")
+    _     <- if (count == 1) redis.expire(s"rateLimit:passwordForget:email:${email}", exp).void else ().pure
+  } yield count <= limit
 }
 
 object RedisUtilsLive {

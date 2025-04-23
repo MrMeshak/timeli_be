@@ -163,6 +163,11 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
       passwordForgotDto: PasswordForgotDto,
   ): EitherT[F, BaseError, Replies] = {
     for {
+      _ <- EitherT(
+        redisUtils
+          .isWithinRateLimitPasswordForget(passwordForgotDto.email, 3, 10.minutes)
+          .map(Either.cond(_, (), RateLimitedError("Password forgot request limit reached, please try again later"))),
+      )
       query <- EitherT.right(
         session.prepare(
           sql"""SELECT id, email, password, firstName, lastName FROM users WHERE email = $varchar""".query(userCodec),

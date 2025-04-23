@@ -9,4 +9,5 @@ object baseErrors {
   case class InvalidCredentialsError(override val message: String = "Invalid credentials") extends BaseError {}
   case class AlreadyExistsError(override val message: String)                              extends BaseError {}
   case class NotFoundError(override val message: String)                                   extends BaseError {}
+  case class RateLimitedError(override val message: String)                                extends BaseError {}
 }
