@@ -40,4 +40,15 @@ object authValidators {
       ).map(PasswordForgotDto.apply)
     }
   }
+
+  given passwordResetDtoValidator: Validator[PasswordResetDto] with {
+    override def validate(value: PasswordResetDto): ValidatedNel[ValidationFailure, PasswordResetDto] = {
+      val PasswordResetDto(token, password) = value;
+      (
+        validateRequired(token, "token")(_.nonEmpty),
+        validatePassword(password, "password"),
+      ).mapN(PasswordResetDto.apply)
+
+    }
+  }
 }

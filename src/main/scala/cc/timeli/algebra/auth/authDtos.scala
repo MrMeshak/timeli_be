@@ -22,7 +22,7 @@ object authDtos {
   case class PasswordForgotDto(email: String)
   object PasswordForgotDto { given Decoder[PasswordForgotDto] = deriveDecoder[PasswordForgotDto] }
 
-  case class PasswordResetDto(password: String, token: String)
+  case class PasswordResetDto(token: String, password: String)
   object PasswordResetDto { given Decoder[PasswordResetDto] = deriveDecoder[PasswordResetDto] }
 
 }

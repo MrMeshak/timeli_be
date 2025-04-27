@@ -21,7 +21,7 @@ import cc.timeli.middleware.{AuthMP, AuthContext}
 import cc.timeli.core.validation.authValidators.given
 import cc.timeli.core.validation.syntax.*
 import cc.timeli.core.errors.baseErrors.*
-import cc.timeli.algebra.auth.authDtos.{LoginDto, SignupDto, LogoutDto, PasswordForgotDto}
+import cc.timeli.algebra.auth.authDtos.{LoginDto, SignupDto, LogoutDto, PasswordForgotDto, PasswordResetDto}
 import cc.timeli.algebra.auth.AuthAlgebra
 import cc.timeli.core.responses.responses.FailureRes
 import cc.timeli.core.utils.JwtUtils
@@ -98,8 +98,24 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](
       )
   })
 
+  private val passwordResetRoute: HttpRoutes[F] = HttpRoutes.of[F]({
+    case req @ POST -> Root / "passwordReset" =>
+      req.validate[PasswordResetDto](passwordResetDto => {
+        authAlgebra
+          .passwordReset(passwordResetDto)
+          .value
+          .flatMap({
+            case Right(_) => Ok()
+            case Left(error) =>
+              BadRequest(FailureRes(error.getClass().getSimpleName.replace("$", ""), error.message, List()))
+          })
+      })
+  })
+
   val routes: HttpRoutes[F] = Router(
-    "auth" -> (loginRoute <+> signupRoute <+> passwordForgotRoute <+> authMP.middleware(logoutRoute)),
+    "auth" -> (loginRoute <+> signupRoute <+> passwordForgotRoute <+> passwordResetRoute <+> authMP.middleware(
+      logoutRoute,
+    )),
   )
 }
 
