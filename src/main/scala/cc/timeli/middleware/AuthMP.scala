@@ -88,7 +88,18 @@ class AuthMP[F[_]: Concurrent: LoggerFactory](jwtUtils: JwtUtils[F], redisUtils:
                 maxAge = Some(jwtUtils.config.refreshTokenExpTime),
               ),
             )
-          } yield resp.addCookie(accessTokenCookie).addCookie(refreshTokenCookie)
+            authContextCookie <- OptionT.some(
+              ResponseCookie(
+                name = "authContext",
+                content = req.authInfo.permissions.toString(),
+                path = Some("/"),
+                httpOnly = false,
+                secure = true,
+                sameSite = Some(SameSite.Strict),
+                maxAge = Some(jwtUtils.config.refreshTokenExpTime),
+              ),
+            )
+          } yield resp.addCookie(accessTokenCookie).addCookie(refreshTokenCookie).addCookie(authContextCookie)
         },
       )
   }

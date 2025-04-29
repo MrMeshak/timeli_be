@@ -92,9 +92,21 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
           maxAge = Some(jwtUtils.config.refreshTokenExpTime),
         ),
       )
+      authContextCookie <- EitherT.rightT(
+        ResponseCookie(
+          name = "authContext",
+          content = userWithRole.role.mask.toString(),
+          path = Some("/"),
+          httpOnly = false,
+          secure = true,
+          sameSite = Some(SameSite.Strict),
+          maxAge = Some(jwtUtils.config.refreshTokenExpTime),
+        ),
+      )
     } yield LoginData(
       accessTokenCookie,
       refreshTokenCookie,
+      authContextCookie,
     )
   }
 
@@ -157,7 +169,18 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
           maxAge = Some(0),
         ),
       )
-    } yield LogoutData(accessTokenCookieEmpty, refreshTokenCookieEmpty)
+      authContextCookieEmpty <- EitherT.rightT(
+        ResponseCookie(
+          name = "authContext",
+          content = "",
+          path = Some("/"),
+          httpOnly = false,
+          secure = true,
+          sameSite = Some(SameSite.Strict),
+          maxAge = Some(0),
+        ),
+      )
+    } yield LogoutData(accessTokenCookieEmpty, refreshTokenCookieEmpty, authContextCookieEmpty)
   }
 
   override def passwordForgot(

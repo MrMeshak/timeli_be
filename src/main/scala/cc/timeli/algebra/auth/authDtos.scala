@@ -11,13 +11,21 @@ object authDtos {
   case class LoginDto(email: String, password: String)
   object LoginDto { given Decoder[LoginDto] = deriveDecoder[LoginDto] }
 
-  case class LoginData(accessTokenCookie: ResponseCookie, refreshTokenCookie: ResponseCookie)
+  case class LoginData(
+      accessTokenCookie: ResponseCookie,
+      refreshTokenCookie: ResponseCookie,
+      authContextCookie: ResponseCookie,
+  )
 
   case class SignupDto(email: String, password: String, firstName: String, lastName: String)
   object SignupDto { given Decoder[SignupDto] = deriveDecoder[SignupDto] }
 
   case class LogoutDto(userId: UUID)
-  case class LogoutData(accessTokenCookieEmpty: ResponseCookie, refreshTokenCookieEmpty: ResponseCookie)
+  case class LogoutData(
+      accessTokenCookieEmpty: ResponseCookie,
+      refreshTokenCookieEmpty: ResponseCookie,
+      authContextCookieEmpty: ResponseCookie,
+  )
 
   case class PasswordForgotDto(email: String)
   object PasswordForgotDto { given Decoder[PasswordForgotDto] = deriveDecoder[PasswordForgotDto] }
