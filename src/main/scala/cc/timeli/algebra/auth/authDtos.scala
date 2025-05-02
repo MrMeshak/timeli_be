@@ -14,8 +14,15 @@ object authDtos {
   case class LoginData(
       accessTokenCookie: ResponseCookie,
       refreshTokenCookie: ResponseCookie,
-      authContextCookie: ResponseCookie,
+      permissionsData: PermissionsData,
   )
+
+  case class PermissionsData(
+      permissions: BigInt,
+  )
+  object PermissionsData {
+    given Encoder[PermissionsData] = deriveEncoder[PermissionsData]
+  }
 
   case class SignupDto(email: String, password: String, firstName: String, lastName: String)
   object SignupDto { given Decoder[SignupDto] = deriveDecoder[SignupDto] }
@@ -24,7 +31,6 @@ object authDtos {
   case class LogoutData(
       accessTokenCookieEmpty: ResponseCookie,
       refreshTokenCookieEmpty: ResponseCookie,
-      authContextCookieEmpty: ResponseCookie,
   )
 
   case class PasswordForgotDto(email: String)

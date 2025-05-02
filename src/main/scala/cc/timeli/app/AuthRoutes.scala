@@ -40,10 +40,9 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](
           .value
           .flatMap({
             case Right(loginData) => {
-              Ok().map(
+              Ok(loginData.permissionsData).map(
                 _.addCookie(loginData.accessTokenCookie)
-                  .addCookie(loginData.refreshTokenCookie)
-                  .addCookie(loginData.authContextCookie),
+                  .addCookie(loginData.refreshTokenCookie),
               )
             }
             case Left(error: InvalidCredentialsError) =>
