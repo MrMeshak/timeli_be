@@ -2,6 +2,7 @@ package cc.timeli.core.db.seeder.data
 
 import java.util.UUID
 import cc.timeli.core.domain.room.Room
+import cc.timeli.core.domain.roomType.*
 import cc.timeli.core.db.seeder.data.locationIds
 
 val roomIds: List[UUID] = List(
@@ -11,7 +12,7 @@ val roomIds: List[UUID] = List(
 )
 
 val roomSeedData: List[Room] = List(
-  Room(roomIds(0), "Court 1", "", 4, BigDecimal(22.00), locationIds(0)),
-  Room(roomIds(1), "Court 2", "", 4, BigDecimal(15.50), locationIds(0)),
-  Room(roomIds(2), "Court 3", "", 4, BigDecimal(24.00), locationIds(0)),
+  Room(roomIds(0), "Court 1", "", 4, BigDecimal(22.00), 30, roomTypeIds(0), locationIds(0)),
+  Room(roomIds(1), "Court 2", "", 4, BigDecimal(15.50), 60, roomTypeIds(1), locationIds(0)),
+  Room(roomIds(2), "Court 3", "", 4, BigDecimal(24.00), 15, roomTypeIds(2), locationIds(0)),
 )

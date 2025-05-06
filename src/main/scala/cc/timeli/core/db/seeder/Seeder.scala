@@ -18,6 +18,7 @@ import cc.timeli.core.db.Db
 import cc.timeli.core.domain.role.*
 import cc.timeli.core.domain.user.*
 import cc.timeli.core.domain.location.*
+import cc.timeli.core.domain.roomType.*
 import cc.timeli.core.domain.room.*
 import cc.timeli.core.domain.availability.*
 import cc.timeli.core.domain.pricePolicy.*
@@ -26,6 +27,7 @@ import cc.timeli.core.domain.booking.*
 import cc.timeli.core.config.SeederConfig
 import cc.timeli.core.db.seeder.data.roleSeedData
 import cc.timeli.core.db.seeder.data.locationSeedData
+import cc.timeli.core.db.seeder.data.roomTypeSeedData
 import cc.timeli.core.db.seeder.data.roomSeedData
 import cc.timeli.core.db.seeder.data.userSeedData
 import cc.timeli.core.db.seeder.data.bookingSeedData
@@ -64,6 +66,12 @@ object Seeder extends IOApp.Simple {
         ON CONFLICT DO NOTHING
         """.command)
         _ <- locationSeedData.traverse(l => commandLocation.execute(l))
+
+        commandRoomType <- session.prepare(sql"""
+          INSERT INTO roomTypes VALUES ($roomTypeCodec)
+          ON CONFLICT DO NOTHING
+          """.command)
+        _ <- roomTypeSeedData.traverse(rt => commandRoomType.execute(rt))
 
         commandRoom <- session.prepare(sql"""
           INSERT INTO rooms VALUES ($roomCodec) 

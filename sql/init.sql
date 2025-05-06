@@ -31,18 +31,44 @@ create TABLE IF NOT EXISTS locations (
 --   coordinates GEOGRPHY, --
 );
 
+-- Rooms --
+create TABLE IF NOT EXISTS roomTypes (
+  id UUID PRIMARY KEY,
+  name VARCHAR(255) NOT NULL
+);
+
 create TABLE IF NOT EXISTS rooms (
   id UUID PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
-  capacity INT,
+  capacity INT NOT NULL,
+  defaultPrice Decimal(10,2) NOT NULL,
+  slotSize INT NOT NULL CHECK (slotSize IN (5,6,10,12,15,20,30,60)),
+  roomTypeId UUID NOT NULL,
   locationId UUID NOT NULL,
+  CONSTRAINT fk_rooms_roomTypes FOREIGN KEY (roomTypeId) REFERENCES roomTypes(id) ON DELETE RESTRICT,
   CONSTRAINT fk_rooms_locations FOREIGN KEY (locationId) REFERENCES locations(id) ON DELETE CASCADE
 );
 
+create TABLE IF NOT EXISTS availability (
+  id UUID PRIMARY KEY,
+  dayOfWeek INT NOT NULL CHECK (dayOfWeek BETWEEN 0 AND 6),
+  mask TEXT NOT NULL,
+  roomId UUID NOT NULL,
+  CONSTRAINT fk_availability_rooms FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE CASCADE
+);
 
+create TABLE IF NOT EXISTS pricePolicies (
+  id UUID PRIMARY KEY,
+  dayOfWeek INT NOT NULL CHECK (dayOfWeek BETWEEN 0 AND 6),
+  startTime TIME NOT NULL, 
+  endTime TIME NOT NULL,
+  price Decimal(10,2) NOT NULL,
+  roomId UUID NOT NULL,
+  CONSTRAINT fk_pricePolicies_rooms FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE CASCADE
+);
 
--- Booking Slots --
+-- Booking --
 create TABLE IF NOT EXISTS bookings (
   id UUID PRIMARY KEY,
   status VARCHAR(255) NOT NULL,
@@ -50,25 +76,31 @@ create TABLE IF NOT EXISTS bookings (
   CONSTRAINT fk_bookings_users FOREIGN KEY (userId) REFERENCES users(id) ON DELETE RESTRICT
 );
 
-create TABLE IF NOT EXISTS schedules(
-  id UUID PRIMARY KEY,
-  date Date NOT NULL,
-  slotSize INT NOT NULL,
-  scheduleMask TEXT NOT NULL,
-  roomId UUID NOT NULL,
-  CONSTRAINT fk_schedules_rooms FOREIGN KEY (roomID) REFERENCES rooms(id) ON DELETE CASCADE,
-  CONSTRAINT unique_date_roomId UNIQUE (date, roomId)
-);
-
+-- Slots --
 create TABLE IF NOT EXISTS slots (
   id UUID PRIMARY KEY,
-  status VARCHAR(255) NOT NULL,
-  slotMask TEXT NOT NULL, 
-  scheduleId UUID NOT NULL,
+  slotDate DATE NOT NULL,
+  slotIndex INT NOT NULL,
+  mask TEXT NOT NULL,
+  status VARCHAR(255),
+  roomId UUID NOT NULL,
   bookingId UUID NOT NULL,
-  CONSTRAINT fk_slots_schedules FOREIGN KEY (scheduleId) REFERENCES schedules(id) ON DELETE RESTRICT,
-  CONSTRAINT fk_slots_bookings FOREIGN KEY (bookingId) REFERENCES bookings(id) ON DELETE CASCADE
+  userId UUID NOT NULL,
+  CONSTRAINT fk_slots_rooms FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_slots_bookings FOREIGN KEY (bookingId) REFERENCES bookings(id) ON DELETE CASCADE,
+  CONSTRAINT fk_slots_users FOREIGN KEY (userId) REFERENCES users(id) ON DELETE RESTRICT
 );
+
+
+
+
+
+
+
+
+
+
+
 
 
 
