@@ -33,8 +33,9 @@ create TABLE IF NOT EXISTS locations (
 
 -- Rooms --
 create TABLE IF NOT EXISTS roomTypes (
-  id UUID PRIMARY KEY,
-  name VARCHAR(255) NOT NULL
+  id VARCHAR(255) PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  CONSTRAINT valid_roomTypes_id CHECK (id ~ '^[a-z0-9\-]+$') 
 );
 
 create TABLE IF NOT EXISTS rooms (
@@ -42,9 +43,9 @@ create TABLE IF NOT EXISTS rooms (
   name VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
   capacity INT NOT NULL,
-  defaultPrice Decimal(10,2) NOT NULL,
+  defaultPrice INT NOT NULL,
   slotSize INT NOT NULL CHECK (slotSize IN (5,6,10,12,15,20,30,60)),
-  roomTypeId UUID NOT NULL,
+  roomTypeId VARCHAR(255) NOT NULL,
   locationId UUID NOT NULL,
   CONSTRAINT fk_rooms_roomTypes FOREIGN KEY (roomTypeId) REFERENCES roomTypes(id) ON DELETE RESTRICT,
   CONSTRAINT fk_rooms_locations FOREIGN KEY (locationId) REFERENCES locations(id) ON DELETE CASCADE
@@ -60,10 +61,9 @@ create TABLE IF NOT EXISTS availability (
 
 create TABLE IF NOT EXISTS pricePolicies (
   id UUID PRIMARY KEY,
-  dayOfWeek INT NOT NULL CHECK (dayOfWeek BETWEEN 0 AND 6),
-  startTime TIME NOT NULL, 
-  endTime TIME NOT NULL,
-  price Decimal(10,2) NOT NULL,
+  dayOfWeek INT NOT NULL CHECK (dayOfWeek BETWEEN 0 AND 6), 
+  price INT NOT NULL,
+  mask TEXT NOT NULL, 
   roomId UUID NOT NULL,
   CONSTRAINT fk_pricePolicies_rooms FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE CASCADE
 );

@@ -9,11 +9,11 @@ import java.util.UUID
 object roomType {
 
   final case class RoomType(
-      id: UUID,
+      id: String,
       name: String,
   ) {}
 
-  val roomTypeCodec: Codec[RoomType] = (uuid, varchar(255)).tupled.imap({
+  val roomTypeCodec: Codec[RoomType] = (varchar(255), varchar(255)).tupled.imap({
     case (id, name) => RoomType(id, name)
   })(r => (r.id, r.name))
 }

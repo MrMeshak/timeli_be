@@ -16,13 +16,13 @@ object room {
       name: String,
       description: String,
       capacity: Int,
-      defaultPrice: BigDecimal,
+      defaultPrice: Int,
       slotSize: Int,
-      roomTypeId: UUID,
+      roomTypeId: String,
       locationId: UUID,
   )
 
-  val roomCodec: Codec[Room] = (uuid, varchar(255), text, int4, numeric(10, 2), int4, uuid, uuid).tupled.imap({
+  val roomCodec: Codec[Room] = (uuid, varchar(255), text, int4, int4, int4, varchar(255), uuid).tupled.imap({
     case (id, name, description, capacity, defaultPrice, slotSize, roomTypeId, locationId) =>
       Room(id, name, description, capacity, defaultPrice, slotSize, roomTypeId, locationId)
   })(r => (r.id, r.name, r.description, r.capacity, r.defaultPrice, r.slotSize, r.roomTypeId, r.locationId))
