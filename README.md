@@ -3,10 +3,10 @@
 Timeli is a booking website for local sports courts
 
 ## Features
-- [X] Design
+- [X] **Design**
   - Considering key functionality design basic structure for SQL tables
 
-- [x] Authentication 
+- [x] **Authentication** 
   - Cookie based authentication with access and refresh tokens
   - Protected endpoints that are scoped to user
   - Handling of user permissions
@@ -15,17 +15,17 @@ Timeli is a booking website for local sports courts
   - Signup
   - Logout
 
-- [x] Seeding Data
+- [x] **Seeding Data**
   - Seeding mock data ton data base tables
   
-- [ ] Booking Page (currently in progress)
+- [ ] **Booking Page (currently in progress)**
   - Booking grid
   - Booking Selection
   - Submitting Booking
 
-- [ ] Payments
+- [ ] **Payments**
   - Integration with stripe
 
-- [ ] Booking management
+- [ ] **Booking management**
   - Staff access to manage bookings
   
