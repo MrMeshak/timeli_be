@@ -16,7 +16,7 @@ Timeli is a booking website for local sports courts
   - Logout
 
 - [x] **Seeding Data**
-  - Seeding mock data ton data base tables
+  - Seeding mock data in to data base tables
   
 - [ ] **Booking Page (currently in progress)**
   - Booking grid
