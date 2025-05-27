@@ -1,8 +1,27 @@
-## sbt project compiled with Scala 3
+# Timeli
 
-### Usage
+Timeli is a booking website for local sports courts
 
-This is a normal sbt project. You can compile code with `sbt compile`, run it with `sbt run`, and `sbt console` will start a Scala 3 REPL.
+## Features
+- [X] Design
+- Considering key functionality design basic structure for SQL tables
 
-For more information on the sbt-dotty plugin, see the
-[scala3-example-project](https://github.com/scala/scala3-example-project/blob/main/README.md).
+- [x] Authentication 
+- Cookie based authentication with access and refresh tokens
+- Protected endpoints that are scoped to user
+- Handling of user permissions
+- Password resets
+- login
+- signup
+- logout
+  
+- [ ] Booking Page (currently in progress)
+- Booking grid
+- Booking Selection
+- Submitting Booking
+
+- [ ] Payments
+- Integration with stripe
+
+- [ ] Booking management
+- Staff access to manage bookings
