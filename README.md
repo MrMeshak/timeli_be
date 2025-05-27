@@ -2,7 +2,7 @@
 
 Timeli is a booking website for local sports courts
 
-## Features
+## Progress
 - [X] **Design**
   - Considering key functionality design basic structure for SQL tables
 
