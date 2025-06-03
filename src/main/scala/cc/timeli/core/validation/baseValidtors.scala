@@ -16,7 +16,8 @@ object baseValidators {
       extends ValidationFailure(
         s"'${fieldName}' requires a minimum of - 8 characters - symbol - uppercase - lowercase - number",
       )
-  case class InvalidPhone(fieldName: String) extends ValidationFailure(s"'${fieldName}' is an invalid phone number")
+  case class InvalidPhone(fieldName: String)     extends ValidationFailure(s"'${fieldName}' is an invalid phone number")
+  case class InvalidLocalDate(fieldName: String) extends ValidationFailure(s"'${fieldName}' is an invalid date format")
 
   def validateRequired[A](field: A, fieldName: String)(
       predicate: A => Boolean,
@@ -52,4 +53,5 @@ object baseValidators {
       case None    => InvalidPhone(fieldName).invalidNel
     }
   }
+
 }

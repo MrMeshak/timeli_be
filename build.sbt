@@ -18,6 +18,7 @@ lazy val root = project
       "org.slf4j"              % "slf4j-simple"         % "2.0.16",
       "com.github.pureconfig" %% "pureconfig-core"      % "0.17.8",
       "org.tpolecat"          %% "skunk-core"           % "0.6.4",
+      "org.tpolecat"          %% "skunk-circe"          % "0.6.4",
       "io.github.jmcardon"    %% "tsec-http4s"          % "0.5.0",
       "at.favre.lib"           % "bcrypt"               % "0.10.2",
       "dev.profunktor"         % "redis4cats-effects_3" % "1.7.2",

@@ -23,6 +23,7 @@ import cc.timeli.core.domain.room.*
 import cc.timeli.core.domain.availability.*
 import cc.timeli.core.domain.pricePolicy.*
 import cc.timeli.core.domain.booking.*
+import cc.timeli.core.domain.slot.*
 
 import cc.timeli.core.config.SeederConfig
 import cc.timeli.core.db.seeder.data.roleSeedData
@@ -33,6 +34,7 @@ import cc.timeli.core.db.seeder.data.userSeedData
 import cc.timeli.core.db.seeder.data.bookingSeedData
 import cc.timeli.core.db.seeder.data.availabilitySeedData
 import cc.timeli.core.db.seeder.data.pricePolicyData
+import cc.timeli.core.db.seeder.data.slotSeedData
 
 object Seeder extends IOApp.Simple {
 
@@ -96,6 +98,12 @@ object Seeder extends IOApp.Simple {
           ON CONFLICT DO NOTHING
           """.command)
         _ <- bookingSeedData.traverse(b => commandBooking.execute(b))
+
+        commandSlot <- session.prepare(sql"""
+          INSERT INTO slots VALUES ($slotCodec) 
+          ON CONFLICT DO NOTHING
+          """.command)
+        _ <- slotSeedData.traverse(s => commandSlot.execute(s))
 
       } yield ()
     })

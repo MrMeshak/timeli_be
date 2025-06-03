@@ -1,6 +1,7 @@
 package cc.timeli.core.logging
 
 import cats.MonadError
+import cats.data.EitherT
 import cats.implicits.*
 import org.typelevel.log4cats.Logger
 
@@ -16,4 +17,25 @@ object syntax {
       case Right(_) => ().pure[F]
     })
   }
+
+  extension [F[_], L, R, E](et: EitherT[F, L, R])(using me: MonadError[F, E], logger: Logger[F]) {
+    def log(left: L => String, right: R => String, error: E => String): EitherT[F, L, R] = {
+      EitherT(
+        et.value.log(
+          {
+            case Left(l)  => left(l)
+            case Right(r) => right(r)
+          },
+          e => error(e),
+        ),
+      )
+    }
+
+    def logError(error: E => String): EitherT[F, L, R] = {
+      EitherT(
+        et.value.logError(e => error(e)),
+      )
+    }
+  }
+
 }

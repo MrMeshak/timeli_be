@@ -1,5 +1,8 @@
 package cc.timeli.core.domain
 
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.*
+
 import cats.implicits.*
 import cats.syntax.*
 import skunk.Codec
@@ -20,7 +23,10 @@ object location {
       postCode: String,
   ) {}
 
-  object Location {}
+  object Location {
+    given Encoder[Location] = deriveEncoder[Location]
+    given Decoder[Location] = deriveDecoder[Location]
+  }
 
   val locationCodec: Codec[Location] =
     (uuid, varchar(255), varchar(255), varchar(255), varchar(255), varchar(255), varchar(255), varchar(255)).tupled

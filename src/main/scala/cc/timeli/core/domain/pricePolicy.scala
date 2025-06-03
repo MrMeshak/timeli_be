@@ -1,5 +1,8 @@
 package cc.timeli.core.domain
 
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.*
+
 import cats.implicits.*
 import cats.syntax.*
 import skunk.Codec
@@ -17,6 +20,11 @@ object pricePolicy {
       mask: BigInt,
       roomId: UUID,
   ) {}
+
+  object PricePolicy {
+    given Decoder[PricePolicy] = deriveDecoder[PricePolicy]
+    given Encoder[PricePolicy] = deriveEncoder[PricePolicy]
+  }
 
   val pricePolicyCodec: Codec[PricePolicy] =
     (uuid, int4, int4, text, uuid).tupled.imap({
