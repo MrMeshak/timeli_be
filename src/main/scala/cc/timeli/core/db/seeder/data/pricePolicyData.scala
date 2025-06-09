@@ -1,7 +1,7 @@
 package cc.timeli.core.db.seeder.data
 
 import java.util.UUID
-import java.time.LocalTime
+import java.time.LocalDate
 
 import cc.timeli.core.domain.pricePolicy.*
 
@@ -11,6 +11,6 @@ val pricePolicyIds: List[UUID] = List(
 )
 
 val pricePolicyData: List[PricePolicy] = List(
-  PricePolicy(pricePolicyIds(0), 0, 2500, BigInt(786432), roomIds(0)),
-  PricePolicy(pricePolicyIds(1), 2, 1550, BigInt(786432), roomIds(0)),
+  PricePolicy(pricePolicyIds(0), LocalDate.parse("2025-06-01"), 0, 2500, BigInt(786432), roomIds(0)),
+  PricePolicy(pricePolicyIds(1), LocalDate.parse("2025-06-01"), 2, 1550, BigInt(786432), roomIds(0)),
 )

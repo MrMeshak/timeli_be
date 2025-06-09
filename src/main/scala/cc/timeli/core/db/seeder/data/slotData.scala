@@ -14,8 +14,8 @@ val slotIds: List[UUID] = List(
 )
 
 val slotSeedData: List[Slot] = List(
-  Slot(slotIds(0), LocalDate.parse("2025-06-01"), 20, "BOOKED", roomIds(0), bookingIds(0), userIds(0)),
-  Slot(slotIds(1), LocalDate.parse("2025-06-01"), 21, "BOOKED", roomIds(0), bookingIds(0), userIds(0)),
-  Slot(slotIds(2), LocalDate.parse("2025-06-01"), 25, "BOOKED", roomIds(0), bookingIds(1), userIds(0)),
-  Slot(slotIds(3), LocalDate.parse("2025-06-01"), 27, "BOOKED", roomIds(0), bookingIds(1), userIds(0)),
+  Slot(slotIds(0), LocalDate.parse("2025-06-01"), 20, SlotStatus.BOOKED, roomIds(0), bookingIds(0), userIds(0)),
+  Slot(slotIds(1), LocalDate.parse("2025-06-01"), 21, SlotStatus.BOOKED, roomIds(0), bookingIds(0), userIds(0)),
+  Slot(slotIds(2), LocalDate.parse("2025-06-01"), 25, SlotStatus.BOOKED, roomIds(0), bookingIds(1), userIds(0)),
+  Slot(slotIds(3), LocalDate.parse("2025-06-01"), 27, SlotStatus.BOOKED, roomIds(0), bookingIds(1), userIds(0)),
 )

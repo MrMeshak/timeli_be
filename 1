@@ -16,7 +16,6 @@ import cc.timeli.core.errors.BaseError
 import cc.timeli.core.errors.baseErrors.*
 import cc.timeli.algebra.booking.bookingDtos.*
 import cc.timeli.core.domain.room.*
-
 import java.time.DayOfWeek
 
 trait BookingAlgebra[F[_]] {
@@ -38,43 +37,35 @@ final class BookingAlgebraLive[F[_]: Concurrent: LoggerFactory](
               sql"""
               WITH 
               pricePoliciesData AS (
-                SELECT roomId,
+                SELECT pp.roomId,
                 jsonb_agg(
                   jsonb_build_object(
-                    'id', id,
-                    'startDate', startDate,
-                    'dayOfWeek', dayOfWeek,
-                    'price', price,
-                    'mask', mask,
-                    'roomId', roomId
+                    'id', pp.id,
+                    'startDate', pp.startDate,
+                    'dayOfWeek', pp.dayOfWeek,
+                    'price', pp.price,
+                    'mask', pp.mask,
+                    'roomId', pp.roomId
                   )
                 ) AS pricePolicies
-                FROM (
-                  SELECT DISTINCT ON (roomId, dayOfWeek) *
-                  FROM pricePolicies
-                  WHERE dayOfWeek = $int4 AND startDate <= $date
-                  ORDER BY roomId, dayOfWeek, startDate DESC
-                ) latestPricePolicies
-                GROUP BY roomId
+                FROM pricePolicies pp
+                WHERE pp.startDate <= $date
+                GROUP BY pp.roomId
               ),
               availablityData AS (
-                SELECT roomId,
+                SELECT av.roomId,
                 jsonb_agg(
                   jsonb_build_object(
-                    'id', id,
-                    'startDate', startDate,
-                    'dayOfWeek', dayOfWeek,
-                    'mask', mask,
-                    'roomId', roomId
+                    'id', av.id,
+                    'startDate', av.startDate,
+                    'dayOfWeek', av.dayOfWeek,
+                    'mask', av.mask,
+                    'roomId', av.roomId
                   )
                 ) AS availability
-                FROM (
-                  SELECT DISTINCT ON (roomId, dayOfWeek) *
-                  FROM availability
-                  WHERE dayOfWeek = $int4 AND startDate <= $date
-                  ORDER BY roomId, dayOfWeek, startDate DESC
-                ) latestAvailability
-                GROUP BY roomId
+                FROM availability av
+                WHERE av.startDate <= $date
+                GROUP BY av.roomId
               ),
               slotsData AS (
                 SELECT s.roomId,
@@ -134,14 +125,7 @@ final class BookingAlgebraLive[F[_]: Concurrent: LoggerFactory](
         .right[BaseError](
           roomsQuery
             .stream(
-              (
-                bookingMatrixDto.date.getDayOfWeek.getValue - 1,
-                bookingMatrixDto.date,
-                bookingMatrixDto.date.getDayOfWeek.getValue - 1,
-                bookingMatrixDto.date,
-                bookingMatrixDto.date,
-                bookingMatrixDto.roomTypeId,
-              ),
+              (bookingMatrixDto.date, bookingMatrixDto.date, bookingMatrixDto.date, bookingMatrixDto.roomTypeId),
               64,
             )
             .compile
@@ -149,35 +133,31 @@ final class BookingAlgebraLive[F[_]: Concurrent: LoggerFactory](
         )
         .log(l => l.toString, r => r.toString, e => e.getMessage)
     } yield {
+      rooms.map(room => {
+        val availabilityMask =
+          room.availability
+            .filter(_.dayOfWeek == bookingMatrixDto.date.getDayOfWeek.getValue)
+            .maxByOption(_.startDate)
+            .map(_.mask)
+            .getOrElse(BigInt(0))
 
-      val bookingRooms = rooms.map(r => {
-        val availabilityMask  = r.availability.lift(0).map(_.mask).getOrElse(BigInt(0))
-        val pricePoliciesMask = r.pricePolicies.lift(0).map(_.mask).getOrElse(BigInt(0))
-        val slotMask          = r.slots.foldLeft(BigInt(0))((z, s) => BigInt(1) << s.slotIndex | z)
+        val slotsMask = room.slots.foldLeft(BigInt(0))((m, s) => (BigInt(1) << s.slotIndex) | m)
 
-        val slots = List.tabulate(24 * 60 / r.slotSize)(i => {
+        val bookingTimeInterval = {
+          val lowestSetBitIndex  = (availabilityMask | slotsMask).bigInteger.getLowestSetBit
+          val highestSetBitIndex = (availabilityMask | slotsMask).bigInteger.bitLength - 1
 
-          val status =
-            if ((BigInt(1) << i & slotMask) != 0) BookingSlotStatus.BOOKED
-            else if ((BigInt(1) << i & availabilityMask) != 0) BookingSlotStatus.AVAILABLE
-            else BookingSlotStatus.UNAVAILABLE
+          BookingTimeInterval(
+            (lowestSetBitIndex + 1) * room.slotSize / 60,
+            (highestSetBitIndex + 1) * room.slotSize + 59 / 60,
+          )
+        }
 
-          val price =
-            if ((BigInt(1) << i & pricePoliciesMask) != 0)
-              r.pricePolicies.lift(0).map(_.price).getOrElse(r.defaultPrice)
-            else r.defaultPrice
-
-          BookingSlot(status, price, startMins = r.slotSize * i)
+        val bookingSlots = List.tabulate(24 * 60 / room.slotSize)(i => {
+          BookingSlot(BookingStatus.AVAILABLE, room.defaultPrice)
         })
-
-        BookingRoom(r.id, r.name, r.displayName, r.slotSize, r.capacity, slots)
       })
-
-      BookingMatrixData(
-        BookingMatrix(
-          bookingRooms,
-        ),
-      )
+      rooms
     }
   }
 }

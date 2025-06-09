@@ -1,6 +1,7 @@
 package cc.timeli.core.db.seeder.data
 
 import java.util.UUID
+import java.time.LocalDate
 
 import cc.timeli.core.domain.availability.*
 
@@ -15,11 +16,11 @@ val availabilityIds: List[UUID] = List(
 )
 
 val availabilitySeedData: List[Availability] = List(
-  Availability(availabilityIds(0), 0, BigInt(1073741823), roomIds(0)),
-  Availability(availabilityIds(1), 1, BigInt(1073741823), roomIds(0)),
-  Availability(availabilityIds(2), 2, BigInt(1073741823), roomIds(0)),
-  Availability(availabilityIds(3), 3, BigInt(1073741823), roomIds(0)),
-  Availability(availabilityIds(4), 4, BigInt(1073741823), roomIds(0)),
-  Availability(availabilityIds(5), 5, BigInt(1073741823), roomIds(0)),
-  Availability(availabilityIds(6), 6, BigInt(1073741823), roomIds(0)),
+  Availability(availabilityIds(0), LocalDate.parse("2025-06-01"), 0, BigInt(1073741823), roomIds(0)),
+  Availability(availabilityIds(1), LocalDate.parse("2025-06-01"), 1, BigInt(1073741823), roomIds(0)),
+  Availability(availabilityIds(2), LocalDate.parse("2025-06-01"), 2, BigInt(1073741823), roomIds(0)),
+  Availability(availabilityIds(3), LocalDate.parse("2025-06-01"), 3, BigInt(1073741823), roomIds(0)),
+  Availability(availabilityIds(4), LocalDate.parse("2025-06-01"), 4, BigInt(1073741823), roomIds(0)),
+  Availability(availabilityIds(5), LocalDate.parse("2025-06-01"), 5, BigInt(1073741823), roomIds(0)),
+  Availability(availabilityIds(6), LocalDate.parse("2025-06-01"), 6, BigInt(1073741823), roomIds(0)),
 )

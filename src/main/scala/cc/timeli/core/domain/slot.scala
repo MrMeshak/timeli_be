@@ -1,6 +1,7 @@
 package cc.timeli.core.domain
 
 import io.circe.{Decoder, Encoder}
+import io.circe.syntax.*
 import io.circe.generic.semiauto.*
 
 import cats.implicits.*
@@ -19,7 +20,7 @@ object slot {
       id: UUID,
       slotDate: LocalDate,
       slotIndex: Int,
-      status: String,
+      status: SlotStatus,
       roomId: UUID,
       bookingId: UUID,
       userId: UUID,
@@ -40,10 +41,18 @@ object slot {
     uuid,
   ).tupled.imap({
     case (id, slotDate, slotIndex, status, roomId, bookingId, userId) =>
-      Slot(id, slotDate, slotIndex, status, roomId, bookingId, userId)
-  })(s => (s.id, s.slotDate, s.slotIndex, s.status, s.roomId, s.bookingId, s.userId))
+      Slot(id, slotDate, slotIndex, SlotStatus.valueOf(status), roomId, bookingId, userId)
+  })(s => (s.id, s.slotDate, s.slotIndex, s.status.id, s.roomId, s.bookingId, s.userId))
 
-  enum SlotStatus {
-    case PENDING, BOOKED
+  enum SlotStatus(val id: String) {
+    case PENDING extends SlotStatus("PENDING")
+    case BOOKED  extends SlotStatus("BOOKED")
   }
+
+  object SlotStatus {
+    given Decoder[SlotStatus] =
+      Decoder[String].emap(id => SlotStatus.values.find(_.id == id).toRight(s"$id is not a valid SlotStatus"))
+    given Encoder[SlotStatus] = Encoder[String].contramap(_.id)
+  }
+
 }
