@@ -2,6 +2,7 @@ package cc.timeli.core.errors
 
 sealed trait BaseError extends Product with Serializable {
   def message: String
+  def name: String = this.getClass().getSimpleName().replace("$", "")
 }
 
 object baseErrors {

@@ -7,7 +7,16 @@ import io.circe.generic.semiauto.*
 import java.util.UUID
 import java.time.LocalDate
 
+import cc.timeli.core.domain.roomType.RoomType
+
 object bookingDtos {
+
+  case class BookingContextData(
+      roomTypes: List[RoomType],
+  )
+  object BookingContextData {
+    given Encoder[BookingContextData] = deriveEncoder[BookingContextData]
+  }
 
   case class BookingMatrixDto(
       roomTypeId: String,
@@ -49,9 +58,10 @@ object bookingDtos {
   }
 
   case class BookingSlot(
+      index: Int,
       status: BookingSlotStatus,
       price: Int,
-      startMins: Int,
+      startMin: Int,
   )
 
   object BookingSlot {

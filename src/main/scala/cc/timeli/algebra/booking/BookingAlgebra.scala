@@ -15,12 +15,16 @@ import cc.timeli.core.logging.syntax.*
 import cc.timeli.core.errors.BaseError
 import cc.timeli.core.errors.baseErrors.*
 import cc.timeli.algebra.booking.bookingDtos.*
-import cc.timeli.core.domain.room.*
 
 import java.time.DayOfWeek
 
+import cc.timeli.core.domain.room.*
+import cc.timeli.core.domain.roomType.*
+
 trait BookingAlgebra[F[_]] {
+  def bookingContext: EitherT[F, BaseError, BookingContextData]
   def bookingMatrix(bookingMatrixDto: BookingMatrixDto): EitherT[F, BaseError, BookingMatrixData]
+
 }
 
 final class BookingAlgebraLive[F[_]: Concurrent: LoggerFactory](
@@ -28,9 +32,19 @@ final class BookingAlgebraLive[F[_]: Concurrent: LoggerFactory](
 ) extends BookingAlgebra[F] {
   given logger: Logger[F] = LoggerFactory.getLogger()
 
+  override def bookingContext: EitherT[F, BaseError, BookingContextData] = {
+    for {
+      roomTypesQuery <- EitherT.right(session.prepare(sql"""
+        SELECT id, name FROM roomTypes;  
+        """.query(roomTypeCodec)))
+      roomTypes <- EitherT.right(roomTypesQuery.stream(Void, 64).compile.toList)
+    } yield {
+      BookingContextData(roomTypes)
+    }
+  }
+
   override def bookingMatrix(bookingMatrixDto: BookingMatrixDto): EitherT[F, BaseError, BookingMatrixData] = {
     for {
-      _ <- EitherT.right[BaseError](logger.info("Booking Matrix Route"))
       roomsQuery <- EitherT
         .right[BaseError](
           session
@@ -167,7 +181,7 @@ final class BookingAlgebraLive[F[_]: Concurrent: LoggerFactory](
               r.pricePolicies.lift(0).map(_.price).getOrElse(r.defaultPrice)
             else r.defaultPrice
 
-          BookingSlot(status, price, startMins = r.slotSize * i)
+          BookingSlot(i, status, price, startMin = r.slotSize * i)
         })
 
         BookingRoom(r.id, r.name, r.displayName, r.slotSize, r.capacity, slots)

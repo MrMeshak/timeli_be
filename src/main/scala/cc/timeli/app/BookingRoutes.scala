@@ -23,8 +23,17 @@ import cc.timeli.algebra.booking.bookingDtos.*
 class BookingRoutes[F[_]: Concurrent: LoggerFactory](bookingAlgebra: BookingAlgebra[F]) extends HttpValidationDsl[F] {
   given logger1: Logger[F] = LoggerFactory.getLogger
 
+  private val bookingContextRoute: HttpRoutes[F] = HttpRoutes.of[F] {
+    case GET -> Root / "context" =>
+      bookingAlgebra.bookingContext.value
+        .flatMap({
+          case Right(bookingContextData) => Ok(bookingContextData)
+          case Left(error)               => BadRequest(FailureRes(error.name, error.message, List()))
+        })
+  }
+
   private val bookingMatrixRoute: HttpRoutes[F] = HttpRoutes.of[F] {
-    case req @ POST -> Root / "bookingMatrix" =>
+    case req @ POST -> Root / "matrix" =>
       req.validate[BookingMatrixDto](bookingMatrixDto =>
         bookingAlgebra
           .bookingMatrix(bookingMatrixDto)
@@ -32,13 +41,13 @@ class BookingRoutes[F[_]: Concurrent: LoggerFactory](bookingAlgebra: BookingAlge
           .flatMap({
             case Right(bookingMatrixData) => Ok(bookingMatrixData)
             case Left(error) =>
-              BadRequest(FailureRes(error.getClass().getSimpleName().replace("$", ""), error.message, List()))
+              BadRequest(FailureRes(error.name, error.message, List()))
           }),
       )
   }
 
   val routes: HttpRoutes[F] = Router(
-    "booking" -> bookingMatrixRoute,
+    "booking" -> (bookingContextRoute <+> bookingMatrixRoute),
   )
 }
 
