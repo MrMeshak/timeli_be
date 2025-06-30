@@ -181,7 +181,7 @@ final class BookingAlgebraLive[F[_]: Concurrent: LoggerFactory](
               r.pricePolicies.lift(0).map(_.price).getOrElse(r.defaultPrice)
             else r.defaultPrice
 
-          BookingSlot(i, status, price, startMin = r.slotSize * i)
+          BookingSlot(i, status, price, startMin = r.slotSize * i, endMin = r.slotSize * (i + 1))
         })
 
         BookingRoom(r.id, r.name, r.displayName, r.slotSize, r.capacity, slots)

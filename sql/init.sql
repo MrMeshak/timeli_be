@@ -59,7 +59,7 @@ create TABLE IF NOT EXISTS availability (
   dayOfWeek INT NOT NULL CHECK (dayOfWeek BETWEEN 0 AND 6),
   mask TEXT NOT NULL,
   roomId UUID NOT NULL,
-  CONSTRAINT unique_availability_startDate_dayOfWeek UNIQUE (startDate, dayOfWeek),
+  CONSTRAINT unique_availability_startDate_dayOfWeek_roomId UNIQUE (startDate, dayOfWeek, roomId),
   CONSTRAINT fk_availability_rooms FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE CASCADE
 
 );
@@ -71,7 +71,7 @@ create TABLE IF NOT EXISTS pricePolicies (
   price INT NOT NULL,
   mask TEXT NOT NULL, 
   roomId UUID NOT NULL,
-  CONSTRAINT unique_pricePolicies_startDate_dayOfWeek UNIQUE (startDate, dayOfWeek),
+  CONSTRAINT unique_pricePolicies_startDate_dayOfWeek_roomId UNIQUE (startDate, dayOfWeek, roomId),
   CONSTRAINT fk_pricePolicies_rooms FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE CASCADE
 );
 
@@ -92,7 +92,7 @@ create TABLE IF NOT EXISTS slots (
   roomId UUID NOT NULL,
   bookingId UUID NOT NULL,
   userId UUID NOT NULL,
-  CONSTRAINT unique_slots_slotDate_slotIndex_roomId UNIQUE (slotDate, slotIndex, roomId)
+  CONSTRAINT unique_slots_slotDate_slotIndex_roomId UNIQUE (slotDate, slotIndex, roomId),
   CONSTRAINT fk_slots_rooms FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE RESTRICT,
   CONSTRAINT fk_slots_bookings FOREIGN KEY (bookingId) REFERENCES bookings(id) ON DELETE CASCADE,
   CONSTRAINT fk_slots_users FOREIGN KEY (userId) REFERENCES users(id) ON DELETE RESTRICT

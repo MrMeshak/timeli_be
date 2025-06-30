@@ -62,6 +62,7 @@ object bookingDtos {
       status: BookingSlotStatus,
       price: Int,
       startMin: Int,
+      endMin: Int,
   )
 
   object BookingSlot {
