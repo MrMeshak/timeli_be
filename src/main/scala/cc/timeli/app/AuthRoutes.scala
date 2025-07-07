@@ -30,7 +30,7 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](
     authMP: AuthMP[F],
     authAlgebra: AuthAlgebra[F],
 ) extends HttpValidationDsl[F] {
-  given logger1: Logger[F] = LoggerFactory[F].getLogger()
+  given Logger[F] = LoggerFactory[F].getLogger()
 
   private val loginRoute: HttpRoutes[F] = HttpRoutes.of[F]({
     case req @ POST -> Root / "login" =>
@@ -53,6 +53,26 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](
       )
   })
 
+  private val mLoginRoute: HttpRoutes[F] = HttpRoutes.of[F]({
+    case req @ POST -> Root / "mlogin" =>
+      req.validate[LoginDto](loginDto =>
+        authAlgebra
+          .mLogin(loginDto)
+          .value
+          .flatMap({
+            case Right(loginData) => {
+              Ok(loginData.permissionsData).map(
+                _.addCookie(loginData.accessTokenCookie)
+                  .addCookie(loginData.refreshTokenCookie),
+              )
+            }
+            case Left(error: InvalidCredentialsError) =>
+              Forbidden(FailureRes(error.getClass().getSimpleName().replace("$", ""), error.message, List()))
+            case Left(error) =>
+              BadRequest(FailureRes(error.getClass().getSimpleName().replace("$", ""), error.message, List()))
+          }),
+      )
+  })
   private val signupRoute: HttpRoutes[F] = HttpRoutes.of[F]({
     case req @ POST -> Root / "signup" =>
       req.validate[SignupDto](signupDto =>
@@ -116,9 +136,10 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](
   })
 
   val routes: HttpRoutes[F] = Router(
-    "auth" -> (loginRoute <+> signupRoute <+> passwordForgotRoute <+> passwordResetRoute <+> authMP.middleware(
-      logoutRoute,
-    )),
+    "auth" -> (loginRoute <+> mLoginRoute <+> signupRoute <+> passwordForgotRoute <+> passwordResetRoute <+> authMP
+      .middleware(
+        logoutRoute,
+      )),
   )
 }
 

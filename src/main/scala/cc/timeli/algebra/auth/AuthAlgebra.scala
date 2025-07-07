@@ -31,6 +31,7 @@ import cc.timeli.core.mail.templates
 
 trait AuthAlgebra[F[_]] {
   def login(loginDto: LoginDto): EitherT[F, BaseError, LoginData]
+  def mLogin(loginDto: LoginDto): EitherT[F, BaseError, LoginData]
   def signup(signupDto: SignupDto): EitherT[F, BaseError, Unit]
   def logout(logoutDto: LogoutDto): EitherT[F, BaseError, LogoutData]
   def passwordForgot(passwordForgotDto: PasswordForgotDto): EitherT[F, BaseError, Replies]
@@ -55,6 +56,59 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
                 FROM users u 
                 INNER JOIN roles r ON u.roleId = r.id 
                 WHERE email = $varchar
+                """
+              .query(userWithRoleCodec),
+          ),
+      )
+      userWithRole <- EitherT.fromOptionF(query.option(loginDto.email), InvalidCredentialsError())
+      _ <- EitherT.cond(
+        BCrypt.verifyer().verify(loginDto.password.toCharArray(), userWithRole.user.password).verified,
+        (),
+        InvalidCredentialsError(),
+      )
+      accessToken  <- EitherT.right(jwtUtils.createAccessToken(userWithRole.user.id, userWithRole.role.mask))
+      refreshToken <- EitherT.right(jwtUtils.createRefreshToken(accessToken))
+      _ <- EitherT.right(
+        redisUtils.setRefreshToken(userWithRole.user.id, refreshToken, jwtUtils.config.refreshTokenExpTime.seconds),
+      )
+      accessTokenCookie <- EitherT.rightT(
+        ResponseCookie(
+          name = "accessToken",
+          content = accessToken,
+          path = Some("/"),
+          httpOnly = true,
+          secure = true,
+          sameSite = Some(SameSite.Strict),
+          maxAge = Some(jwtUtils.config.accessTokenExpTime),
+        ),
+      )
+      refreshTokenCookie <- EitherT.rightT(
+        ResponseCookie(
+          name = "refreshToken",
+          content = refreshToken,
+          path = Some("/"),
+          httpOnly = true,
+          secure = true,
+          sameSite = Some(SameSite.Strict),
+          maxAge = Some(jwtUtils.config.refreshTokenExpTime),
+        ),
+      )
+    } yield LoginData(
+      accessTokenCookie,
+      refreshTokenCookie,
+      PermissionsData(userWithRole.role.mask),
+    )
+  }
+
+  override def mLogin(loginDto: LoginDto): EitherT[F, BaseError, LoginData] = {
+    for {
+      query <- EitherT.right(
+        session
+          .prepare(
+            sql"""SELECT u.id, u.email, u.password, u.firstName, u.lastName, r.id, r.name, r.mask 
+                FROM users u 
+                INNER JOIN roles r ON u.roleId = r.id 
+                WHERE u.email = $varchar AND r.name NOT IN ('GUEST', 'USER')
                 """
               .query(userWithRoleCodec),
           ),

@@ -28,9 +28,9 @@ class UserRoutes[F[_]: Concurrent: LoggerFactory](authMP: AuthMP[F], userAlgebra
         .flatMap({
           case Right(userInfoData) => Ok(userInfoData)
           case Left(error: NotFoundError) =>
-            NotFound(FailureRes(error.getClass().getSimpleName().dropRight(1), error.message, List()))
+            NotFound(FailureRes(error.name, error.message, List()))
           case Left(error) =>
-            BadRequest(FailureRes(error.getClass().getSimpleName().dropRight(1), error.message, List()))
+            BadRequest(FailureRes(error.name, error.message, List()))
         })
     }
   }
