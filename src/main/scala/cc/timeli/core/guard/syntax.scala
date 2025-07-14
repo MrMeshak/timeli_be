@@ -16,7 +16,7 @@ object syntax {
   trait HttpGuardDsl[F[_]: MonadThrow: LoggerFactory] extends Http4sDsl[F] {
 
     extension (authContext: AuthContext)
-      def guard(permission: Permission)(onPass: F[Response[F]]) = {
+      def guard(permission: Permission)(onPass: => F[Response[F]]) = {
         if ((authContext.permissions & permission.mask) != 0) {
           onPass
         } else {
