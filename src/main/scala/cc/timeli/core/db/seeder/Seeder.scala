@@ -58,7 +58,7 @@ object Seeder extends IOApp.Simple {
         _ <- roleSeedData.traverse(r => commandRole.execute(r))
 
         commandUser <- session.prepare(sql"""
-          INSERT INTO users VALUES ($userCodec, DEFAULT, (SELECT id FROM roles WHERE name = 'USER'))
+          INSERT INTO users VALUES ($userCodec, (SELECT id FROM roles WHERE name = 'USER'))
           ON CONFLICT(id) DO NOTHING
           """.command)
         _ <- userSeedData(seederConfig).traverse(u => commandUser.execute(u))

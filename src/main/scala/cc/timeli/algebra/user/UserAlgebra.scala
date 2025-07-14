@@ -25,7 +25,7 @@ final class UserAlgebraLive[F[_]: Concurrent: LoggerFactory](
     for {
       query <- EitherT.right(
         session.prepare(
-          sql"""SELECT id, email, password, firstName, lastName FROM users WHERE id = $uuid""".query(userCodec),
+          sql"""SELECT id, email, password, firstName, lastName, status FROM users WHERE id = $uuid""".query(userCodec),
         ),
       )
       user <- EitherT.fromOptionF(query.option(meDto.id), NotFoundError("User could not be found"))
@@ -34,6 +34,7 @@ final class UserAlgebraLive[F[_]: Concurrent: LoggerFactory](
       email = user.email,
       firstName = user.firstName,
       lastName = user.lastName,
+      status = user.status,
     )
   }
 }

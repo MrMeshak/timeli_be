@@ -11,6 +11,7 @@ import io.circe.generic.semiauto.*
 import java.util.UUID
 
 import cc.timeli.core.domain.role.*
+import cc.timeli.core.shared.enums.*
 
 object user {
 
@@ -20,16 +21,18 @@ object user {
       password: String,
       firstName: String,
       lastName: String,
+      status: UserStatus,
   ) {}
 
   object User {
     given Encoder[User] = deriveEncoder[User].mapJsonObject(_.remove("password"))
   }
 
-  val userCodec: Codec[User] = (uuid, varchar(255), varchar(255), varchar(255), varchar(255)).tupled.imap({
-    case (id, email, password, firstName, lastName) => User(id, email, password, firstName, lastName)
+  val userCodec: Codec[User] = (uuid, varchar(255), varchar(255), varchar(255), varchar(255), varchar(50)).tupled.imap({
+    case (id, email, password, firstName, lastName, status) =>
+      User(id, email, password, firstName, lastName, UserStatus.fromString(status))
   })({ user =>
-    (user.id, user.email, user.password, user.firstName, user.lastName)
+    (user.id, user.email, user.password, user.firstName, user.lastName, user.status.value)
   })
 
   final case class UserWithRole(user: User, role: Role) {}

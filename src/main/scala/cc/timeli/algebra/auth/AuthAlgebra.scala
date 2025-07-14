@@ -28,6 +28,7 @@ import cc.timeli.core.utils.JwtUtils
 import cc.timeli.core.utils.RedisUtils
 import cc.timeli.core.logging.syntax.*
 import cc.timeli.core.mail.templates
+import cc.timeli.core.shared.enums.*
 
 trait AuthAlgebra[F[_]] {
   def login(loginDto: LoginDto): EitherT[F, BaseError, LoginData]
@@ -52,7 +53,7 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
       query <- EitherT.right(
         session
           .prepare(
-            sql"""SELECT u.id, u.email, u.password, u.firstName, u.lastName, r.id, r.name, r.label, r.mask 
+            sql"""SELECT u.id, u.email, u.password, u.firstName, u.lastName, u.status, r.id, r.name, r.label, r.color, r.mask 
                 FROM users u 
                 INNER JOIN roles r ON u.roleId = r.id 
                 WHERE u.email = $varchar
@@ -107,7 +108,7 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
       query <- EitherT.right(
         session
           .prepare(
-            sql"""SELECT u.id, u.email, u.password, u.firstName, u.lastName, r.id, r.name, r.label, r.mask 
+            sql"""SELECT u.id, u.email, u.password, u.firstName, u.lastName, u.status, r.id, r.name, r.label, r.color, r.mask 
                 FROM users u 
                 INNER JOIN roles r ON u.roleId = r.id 
                 WHERE u.email = $varchar AND r.name NOT IN ('GUEST', 'USER')
@@ -159,7 +160,9 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
     for {
       query <- EitherT.right(
         session.prepare(
-          sql"""SELECT id, email, password, firstName, lastName FROM users WHERE email = $varchar""".query(userCodec),
+          sql"""SELECT id, email, password, firstName, lastName, status FROM users WHERE email = $varchar""".query(
+            userCodec,
+          ),
         ),
       )
       _ <- EitherT(
@@ -172,7 +175,7 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
       )
       command <- EitherT.right(
         session.prepare(
-          sql"""INSERT INTO users VALUES ($userCodec, DEFAULT, (SELECT id FROM roles WHERE name = 'USER'))""".command,
+          sql"""INSERT INTO users VALUES ($userCodec, (SELECT id FROM roles WHERE name = 'USER'))""".command,
         ),
       )
       _ <- EitherT.right(
@@ -183,6 +186,7 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
             password = BCrypt.withDefaults().hashToString(12, signupDto.password.toCharArray()),
             firstName = signupDto.firstName,
             lastName = signupDto.lastName,
+            status = UserStatus.ACTIVE,
           ),
         ),
       )
@@ -228,7 +232,9 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
       )
       query <- EitherT.right(
         session.prepare(
-          sql"""SELECT id, email, password, firstName, lastName FROM users WHERE email = $varchar""".query(userCodec),
+          sql"""SELECT id, email, password, firstName, lastName, status FROM users WHERE email = $varchar""".query(
+            userCodec,
+          ),
         ),
       )
       user <- EitherT.fromOptionF(query.option(passwordForgotDto.email), NotFoundError("User could not be found"))
