@@ -13,7 +13,7 @@ import cc.timeli.algebra.user.userDtos.*
 import cc.timeli.core.errors.baseErrors.*
 
 trait UserAlgebra[F[_]] {
-  def userInfo(userInfoDto: UserInfoDto): EitherT[F, BaseError, UserInfoData]
+  def me(meDto: MeDto): EitherT[F, BaseError, MeData]
 }
 
 final class UserAlgebraLive[F[_]: Concurrent: LoggerFactory](
@@ -21,15 +21,15 @@ final class UserAlgebraLive[F[_]: Concurrent: LoggerFactory](
 ) extends UserAlgebra[F] {
   given logger: Logger[F] = LoggerFactory.getLogger()
 
-  override def userInfo(userInfoDto: UserInfoDto): EitherT[F, BaseError, UserInfoData] = {
+  override def me(meDto: MeDto): EitherT[F, BaseError, MeData] = {
     for {
       query <- EitherT.right(
         session.prepare(
           sql"""SELECT id, email, password, firstName, lastName FROM users WHERE id = $uuid""".query(userCodec),
         ),
       )
-      user <- EitherT.fromOptionF(query.option(userInfoDto.id), NotFoundError("User could not be found"))
-    } yield UserInfoData(
+      user <- EitherT.fromOptionF(query.option(meDto.id), NotFoundError("User could not be found"))
+    } yield MeData(
       id = user.id,
       email = user.email,
       firstName = user.firstName,

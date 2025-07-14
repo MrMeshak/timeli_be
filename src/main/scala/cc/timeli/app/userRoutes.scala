@@ -16,14 +16,17 @@ import cc.timeli.algebra.user.UserAlgebra
 import cc.timeli.core.errors.baseErrors.*
 import cc.timeli.algebra.user.userDtos.*
 import cc.timeli.core.responses.responses.FailureRes
+import cc.timeli.core.guard.syntax.*
+import cc.timeli.core.shared.Permission
 
 class UserRoutes[F[_]: Concurrent: LoggerFactory](authMP: AuthMP[F], userAlgebra: UserAlgebra[F])
-    extends HttpValidationDsl[F] {
+    extends HttpValidationDsl[F]
+    with HttpGuardDsl[F] {
 
-  private val infoRoute: AuthedRoutes[AuthContext, F] = AuthedRoutes.of[AuthContext, F] {
-    case req @ GET -> Root / "info" as authContext => {
+  private val meRoute: AuthedRoutes[AuthContext, F] = AuthedRoutes.of[AuthContext, F] {
+    case req @ GET -> Root / "me" as authContext => {
       userAlgebra
-        .userInfo(UserInfoDto(authContext.userId))
+        .me(MeDto(authContext.userId))
         .value
         .flatMap({
           case Right(userInfoData) => Ok(userInfoData)
@@ -35,8 +38,16 @@ class UserRoutes[F[_]: Concurrent: LoggerFactory](authMP: AuthMP[F], userAlgebra
     }
   }
 
+  private val tableRoute: AuthedRoutes[AuthContext, F] = AuthedRoutes.of[AuthContext, F] {
+    case req @ GET -> Root / "table" as authContext => {
+      authContext.guard(Permission.READ_USER_TABLE) {
+        Ok()
+      }
+    }
+  }
+
   val routes: HttpRoutes[F] = Router(
-    "user" -> (authMP.middleware(infoRoute)),
+    "user" -> (authMP.middleware(meRoute <+> tableRoute)),
   )
 }
 

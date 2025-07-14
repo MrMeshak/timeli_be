@@ -21,7 +21,6 @@ object syntax {
   }
 
   trait HttpValidationDsl[F[_]: MonadThrow: LoggerFactory] extends Http4sDsl[F] {
-    val logger = LoggerFactory.getLogger()
 
     extension (req: Request[F])
       def validate[A: Validator](serverLogicIfValid: A => F[Response[F]])(using EntityDecoder[F, A]) = {
@@ -31,7 +30,6 @@ object syntax {
           .flatMap({
             case Valid(entity) => serverLogicIfValid(entity)
             case Invalid(errors) => {
-              logger.info("errors in validation")
               UnprocessableEntity(
                 FailureRes(
                   error = "Invalid Payload",

@@ -8,6 +8,7 @@ import org.typelevel.log4cats.slf4j.Slf4jFactory
 import pureconfig.ConfigSource
 import skunk.Session
 import natchez.Trace.Implicits.noop
+import org.http4s.server.middleware.Logger
 import org.http4s.ember.server.EmberServerBuilder
 import dev.profunktor.redis4cats.Redis
 import dev.profunktor.redis4cats.effect.Log.Stdout.given
@@ -41,7 +42,11 @@ object Main extends IOApp.Simple {
         .default[IO]
         .withHost(serverConfig.host)
         .withPort(serverConfig.port)
-        .withHttpApp(AppRoutes[IO](baseConfig, session, mailer, redisUtils, jwtUtils).routes.orNotFound)
+        .withHttpApp(
+          Logger.httpApp(logHeaders = false, logBody = true)(
+            AppRoutes[IO](baseConfig, session, mailer, redisUtils, jwtUtils).routes.orNotFound,
+          ),
+        )
         .build
     } yield server
 

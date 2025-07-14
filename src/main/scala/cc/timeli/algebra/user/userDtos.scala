@@ -5,7 +5,7 @@ import io.circe.generic.semiauto.*
 import java.util.UUID
 
 object userDtos {
-  case class UserInfoDto(id: UUID)
-  case class UserInfoData(id: UUID, email: String, firstName: String, lastName: String)
-  object UserInfoData { given Encoder[UserInfoData] = deriveEncoder[UserInfoData] }
+  case class MeDto(id: UUID)
+  case class MeData(id: UUID, email: String, firstName: String, lastName: String)
+  object MeData { given Encoder[MeData] = deriveEncoder[MeData] }
 }

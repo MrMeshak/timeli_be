@@ -31,7 +31,7 @@ import cc.timeli.core.mail.templates
 
 trait AuthAlgebra[F[_]] {
   def login(loginDto: LoginDto): EitherT[F, BaseError, LoginData]
-  def mLogin(loginDto: LoginDto): EitherT[F, BaseError, LoginData]
+  def dashLogin(loginDto: LoginDto): EitherT[F, BaseError, LoginData]
   def signup(signupDto: SignupDto): EitherT[F, BaseError, Unit]
   def logout(logoutDto: LogoutDto): EitherT[F, BaseError, LogoutData]
   def passwordForgot(passwordForgotDto: PasswordForgotDto): EitherT[F, BaseError, Replies]
@@ -52,15 +52,17 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
       query <- EitherT.right(
         session
           .prepare(
-            sql"""SELECT u.id, u.email, u.password, u.firstName, u.lastName, r.id, r.name, r.mask 
+            sql"""SELECT u.id, u.email, u.password, u.firstName, u.lastName, r.id, r.name, r.label, r.mask 
                 FROM users u 
                 INNER JOIN roles r ON u.roleId = r.id 
-                WHERE email = $varchar
+                WHERE u.email = $varchar
                 """
               .query(userWithRoleCodec),
           ),
       )
-      userWithRole <- EitherT.fromOptionF(query.option(loginDto.email), InvalidCredentialsError())
+      userWithRole <- EitherT
+        .fromOptionF(query.option(loginDto.email), InvalidCredentialsError())
+        .logError(_.toString())
       _ <- EitherT.cond(
         BCrypt.verifyer().verify(loginDto.password.toCharArray(), userWithRole.user.password).verified,
         (),
@@ -100,12 +102,12 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
     )
   }
 
-  override def mLogin(loginDto: LoginDto): EitherT[F, BaseError, LoginData] = {
+  override def dashLogin(loginDto: LoginDto): EitherT[F, BaseError, LoginData] = {
     for {
       query <- EitherT.right(
         session
           .prepare(
-            sql"""SELECT u.id, u.email, u.password, u.firstName, u.lastName, r.id, r.name, r.mask 
+            sql"""SELECT u.id, u.email, u.password, u.firstName, u.lastName, r.id, r.name, r.label, r.mask 
                 FROM users u 
                 INNER JOIN roles r ON u.roleId = r.id 
                 WHERE u.email = $varchar AND r.name NOT IN ('GUEST', 'USER')

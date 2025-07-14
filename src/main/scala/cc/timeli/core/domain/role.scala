@@ -13,9 +13,9 @@ import java.util.UUID
 
 object role {
 
-  case class Role(id: UUID, name: String, mask: BigInt)
+  case class Role(id: UUID, name: String, label: String, mask: BigInt)
 
-  val roleCodec: Codec[Role] = (uuid, varchar(50), text).tupled.imap({
-    case (id, role, mask) => Role(id, role, BigInt(mask))
-  })(role => (role.id, role.name, role.mask.toString))
+  val roleCodec: Codec[Role] = (uuid, varchar(50), varchar(50), text).tupled.imap({
+    case (id, role, label, mask) => Role(id, role, label, BigInt(mask))
+  })(role => (role.id, role.name, role.label, role.mask.toString))
 }

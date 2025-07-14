@@ -12,7 +12,7 @@ val roleIds: List[UUID] = List(
 )
 
 val roleSeedData: List[Role] = List(
-  Role(roleIds(0), "USER", Permission.READ_USER_INFO.mask),
-  Role(roleIds(1), "ADMIN", Permission.READ_USER_INFO.mask),
-  Role(roleIds(2), "SUPERADMIN", Permission.READ_USER_INFO.mask),
+  Role(roleIds(0), "USER", "User", Permission.READ_USER_ME.mask),
+  Role(roleIds(1), "ADMIN", "Admin", Permission.READ_USER_ME.mask),
+  Role(roleIds(2), "SUPERADMIN", "Super Admin", Permission.READ_USER_ME.mask),
 )
