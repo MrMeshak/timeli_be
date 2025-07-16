@@ -30,7 +30,14 @@ object user {
 
   val userCodec: Codec[User] = (uuid, varchar(255), varchar(255), varchar(255), varchar(255), varchar(50)).tupled.imap({
     case (id, email, password, firstName, lastName, status) =>
-      User(id, email, password, firstName, lastName, UserStatus.fromString(status))
+      User(
+        id,
+        email,
+        password,
+        firstName,
+        lastName,
+        UserStatus.fromStringUnsafe(status),
+      )
   })({ user =>
     (user.id, user.email, user.password, user.firstName, user.lastName, user.status.value)
   })

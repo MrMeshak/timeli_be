@@ -17,6 +17,6 @@ object role {
   case class Role(id: UUID, name: String, label: String, color: ThemeColor, mask: BigInt)
 
   val roleCodec: Codec[Role] = (uuid, varchar(50), varchar(50), varchar(50), text).tupled.imap({
-    case (id, role, label, color, mask) => Role(id, role, label, ThemeColor.fromString(color), BigInt(mask))
+    case (id, role, label, color, mask) => Role(id, role, label, ThemeColor.fromStringUnsafe(color), BigInt(mask))
   })(role => (role.id, role.name, role.label, role.color.value, role.mask.toString))
 }

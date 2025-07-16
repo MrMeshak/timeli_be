@@ -2,7 +2,8 @@ package cc.timeli.core.validation
 
 import cats.data.ValidatedNel
 
-trait ValidationFailure(val message: String) {
+trait ValidationFailure {
+  val message: String
   val fieldName: String
 }
 

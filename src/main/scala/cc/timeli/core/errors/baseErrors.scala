@@ -12,4 +12,5 @@ object baseErrors {
   case class AlreadyExistsError(override val message: String)                              extends BaseError {}
   case class NotFoundError(override val message: String)                                   extends BaseError {}
   case class RateLimitedError(override val message: String)                                extends BaseError {}
+  case class UserStatusSuspendedError(override val message: String = "User is suspended")  extends BaseError {}
 }

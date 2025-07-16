@@ -9,21 +9,47 @@ import scala.util.{Try, Failure, Success}
 import java.net.URL
 
 object baseValidators {
-  case class EmptyField(fieldName: String)   extends ValidationFailure(s"'${fieldName}' is required")
-  case class InvalidUrl(fieldName: String)   extends ValidationFailure(s"'${fieldName}' is an invalid url")
-  case class InvalidEmail(fieldName: String) extends ValidationFailure(s"'${fieldName}' is an invalid Email")
-  case class InvalidPassword(fieldName: String)
-      extends ValidationFailure(
-        s"'${fieldName}' requires a minimum of - 8 characters - symbol - uppercase - lowercase - number",
-      )
-  case class InvalidPhone(fieldName: String)     extends ValidationFailure(s"'${fieldName}' is an invalid phone number")
-  case class InvalidLocalDate(fieldName: String) extends ValidationFailure(s"'${fieldName}' is an invalid date format")
+
+  case class EmptyField(fieldName: String, message: String) extends ValidationFailure
+  object EmptyField {
+    def apply(fieldName: String): EmptyField = EmptyField(fieldName, s"'${fieldName}' is required")
+  }
+
+  case class FailedCondition(fieldName: String, message: String) extends ValidationFailure
+
+  case class InvalidUrl(fieldName: String, message: String) extends ValidationFailure
+  object InvalidUrl {
+    def apply(fieldName: String): InvalidUrl = InvalidUrl(fieldName, s"'${fieldName}' is an invalid url")
+  }
+
+  case class InvalidEmail(fieldName: String, message: String) extends ValidationFailure
+  object InvalidEmail {
+    def apply(fieldName: String): InvalidEmail = InvalidEmail(fieldName, s"'${fieldName}' is an invalid email")
+  }
+
+  case class InvalidPassword(fieldName: String, message: String) extends ValidationFailure
+  object InvalidPassword {
+    def apply(fieldName: String): InvalidPassword = InvalidPassword(
+      fieldName,
+      s"'${fieldName}' requires a minimum of - 8 characters - symbol - uppercase - lowercase - number",
+    )
+  }
+
+  case class InvalidPhone(fieldName: String, message: String) extends ValidationFailure
+  object InvalidPhone {
+    def apply(fieldName: String): InvalidPhone = InvalidPhone(fieldName, s"'${fieldName}' is an invalid phone number")
+  }
 
   def validateRequired[A](field: A, fieldName: String)(
       predicate: A => Boolean,
   ): ValidatedNel[ValidationFailure, A] = {
     if (predicate(field)) field.validNel
     else EmptyField(fieldName).invalidNel
+  }
+
+  def validateCondition[A](field: A, fieldName: String)(predicate: A => Boolean, message: String) = {
+    if (predicate(field)) field.validNel
+    else FailedCondition(fieldName, s"$fieldName $message").invalidNel
   }
 
   def validateUrl(field: String, fieldName: String) = {

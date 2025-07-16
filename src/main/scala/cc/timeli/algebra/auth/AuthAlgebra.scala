@@ -63,7 +63,7 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
       )
       userWithRole <- EitherT
         .fromOptionF(query.option(loginDto.email), InvalidCredentialsError())
-        .logError(_.toString())
+      _ <- EitherT.cond(userWithRole.user.status != UserStatus.SUSPENDED, (), UserStatusSuspendedError())
       _ <- EitherT.cond(
         BCrypt.verifyer().verify(loginDto.password.toCharArray(), userWithRole.user.password).verified,
         (),

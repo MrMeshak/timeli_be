@@ -12,7 +12,10 @@ object enums {
   object UserStatus {
     given Encoder[UserStatus] = Encoder.encodeString.contramap(_.value)
 
-    def fromString(value: String): UserStatus =
+    def fromString(value: String): Option[UserStatus] =
+      UserStatus.values.find(_.value == value)
+
+    def fromStringUnsafe(value: String): UserStatus =
       UserStatus.values.find(_.value == value) match
         case Some(status) => status
         case None         => throw new IllegalArgumentException(s"Invalid UserStatus: '$value'")
@@ -29,10 +32,10 @@ object enums {
   }
 
   object ThemeColor {
-    def fromString(value: String): ThemeColor =
+    def fromStringUnsafe(value: String): ThemeColor =
       ThemeColor.values.find(_.value == value) match
         case Some(color) => color
-        case None        => throw new IllegalArgumentException(s"Invalid ThemeColor: '$value")
+        case None        => throw new IllegalArgumentException(s"Invalid ThemeColor: '$value'")
   }
 
 }

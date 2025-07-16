@@ -14,6 +14,7 @@ import cc.timeli.core.errors.baseErrors.*
 
 trait UserAlgebra[F[_]] {
   def me(meDto: MeDto): EitherT[F, BaseError, MeData]
+  def table(tableDto: TableDto): EitherT[F, BaseError, TableData]
 }
 
 final class UserAlgebraLive[F[_]: Concurrent: LoggerFactory](
@@ -37,6 +38,8 @@ final class UserAlgebraLive[F[_]: Concurrent: LoggerFactory](
       status = user.status,
     )
   }
+
+  override def table(tableDto: TableDto): EitherT[F, BaseError, TableData] = ???
 }
 
 object UserAlgebraLive {
