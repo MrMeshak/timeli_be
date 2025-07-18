@@ -42,9 +42,20 @@ object user {
     (user.id, user.email, user.password, user.firstName, user.lastName, user.status.value)
   })
 
-  final case class UserWithRole(user: User, role: Role) {}
+  final case class UserWithRole(
+      id: UUID,
+      email: String,
+      password: String,
+      firstName: String,
+      lastName: String,
+      status: UserStatus,
+      role: Role,
+  ) {}
 
-  val userWithRoleCodec: Codec[UserWithRole] = (userCodec, roleCodec).tupled.imap({
-    case (user, role) => UserWithRole(user, role)
-  })(uwr => (uwr.user, uwr.role))
+  val userWithRoleCodec: Codec[UserWithRole] =
+    (uuid, varchar(255), varchar(255), varchar(255), varchar(255), varchar(50), roleCodec).tupled.imap({
+      case (id, email, password, firstName, lastName, status, role) =>
+        UserWithRole(id, email, password, firstName, lastName, UserStatus.fromStringUnsafe(status), role)
+    })(uwr => (uwr.id, uwr.email, uwr.password, uwr.firstName, uwr.lastName, uwr.status.value, uwr.role))
+
 }

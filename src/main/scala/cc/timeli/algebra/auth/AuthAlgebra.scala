@@ -63,16 +63,16 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
       )
       userWithRole <- EitherT
         .fromOptionF(query.option(loginDto.email), InvalidCredentialsError())
-      _ <- EitherT.cond(userWithRole.user.status != UserStatus.SUSPENDED, (), UserStatusSuspendedError())
+      _ <- EitherT.cond(userWithRole.status != UserStatus.SUSPENDED, (), UserStatusSuspendedError())
       _ <- EitherT.cond(
-        BCrypt.verifyer().verify(loginDto.password.toCharArray(), userWithRole.user.password).verified,
+        BCrypt.verifyer().verify(loginDto.password.toCharArray(), userWithRole.password).verified,
         (),
         InvalidCredentialsError(),
       )
-      accessToken  <- EitherT.right(jwtUtils.createAccessToken(userWithRole.user.id, userWithRole.role.mask))
+      accessToken  <- EitherT.right(jwtUtils.createAccessToken(userWithRole.id, userWithRole.role.mask))
       refreshToken <- EitherT.right(jwtUtils.createRefreshToken(accessToken))
       _ <- EitherT.right(
-        redisUtils.setRefreshToken(userWithRole.user.id, refreshToken, jwtUtils.config.refreshTokenExpTime.seconds),
+        redisUtils.setRefreshToken(userWithRole.id, refreshToken, jwtUtils.config.refreshTokenExpTime.seconds),
       )
       accessTokenCookie <- EitherT.rightT(
         ResponseCookie(
@@ -118,14 +118,14 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
       )
       userWithRole <- EitherT.fromOptionF(query.option(loginDto.email), InvalidCredentialsError())
       _ <- EitherT.cond(
-        BCrypt.verifyer().verify(loginDto.password.toCharArray(), userWithRole.user.password).verified,
+        BCrypt.verifyer().verify(loginDto.password.toCharArray(), userWithRole.password).verified,
         (),
         InvalidCredentialsError(),
       )
-      accessToken  <- EitherT.right(jwtUtils.createAccessToken(userWithRole.user.id, userWithRole.role.mask))
+      accessToken  <- EitherT.right(jwtUtils.createAccessToken(userWithRole.id, userWithRole.role.mask))
       refreshToken <- EitherT.right(jwtUtils.createRefreshToken(accessToken))
       _ <- EitherT.right(
-        redisUtils.setRefreshToken(userWithRole.user.id, refreshToken, jwtUtils.config.refreshTokenExpTime.seconds),
+        redisUtils.setRefreshToken(userWithRole.id, refreshToken, jwtUtils.config.refreshTokenExpTime.seconds),
       )
       accessTokenCookie <- EitherT.rightT(
         ResponseCookie(
