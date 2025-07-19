@@ -1,6 +1,6 @@
 package cc.timeli.core.shared
 
-import io.circe.Encoder
+import io.circe.{Encoder, Decoder}
 
 object enums {
   enum UserStatus(val value: String) {
@@ -10,6 +10,8 @@ object enums {
   }
 
   object UserStatus {
+    given Decoder[UserStatus] =
+      Decoder.decodeString.emap(v => UserStatus.fromString(v).toRight(s"Invalid UserStatus: $v"))
     given Encoder[UserStatus] = Encoder.encodeString.contramap(_.value)
 
     def fromString(value: String): Option[UserStatus] =
@@ -32,6 +34,12 @@ object enums {
   }
 
   object ThemeColor {
+    given Decoder[ThemeColor] =
+      Decoder.decodeString.emap(v => ThemeColor.fromString(v).toRight(s"Invalid ThemeColor: $v"))
+    given Encoder[ThemeColor] = Encoder.encodeString.contramap(_.value)
+
+    def fromString(value: String): Option[ThemeColor] = ThemeColor.values.find(_.value == value)
+
     def fromStringUnsafe(value: String): ThemeColor =
       ThemeColor.values.find(_.value == value) match
         case Some(color) => color
