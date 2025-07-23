@@ -11,6 +11,7 @@ import org.http4s.{AuthedRoutes, HttpRoutes}
 import org.http4s.server.Router
 
 import cc.timeli.core.validation.syntax.*
+import cc.timeli.core.validation.userValidators.given
 import cc.timeli.middleware.{AuthMP, AuthContext}
 import cc.timeli.algebra.user.UserAlgebra
 import cc.timeli.core.errors.baseErrors.*
@@ -39,9 +40,17 @@ class UserRoutes[F[_]: Concurrent: LoggerFactory](authMP: AuthMP[F], userAlgebra
   }
 
   private val tableRoute: AuthedRoutes[AuthContext, F] = AuthedRoutes.of[AuthContext, F] {
-    case req @ GET -> Root / "table" as authContext => {
+    case req @ POST -> Root / "userTable" as authContext => {
       authContext.guard(Permission.READ_USER_TABLE) {
-        Ok()
+        req.req.validate[UserTableDto](userTableDto =>
+          userAlgebra
+            .userTable(userTableDto)
+            .value
+            .flatMap({
+              case Right(userTableData) => Ok(userTableData)
+              case Left(error)          => BadRequest(FailureRes(error.name, error.message, List()))
+            }),
+        )
       }
     }
   }
