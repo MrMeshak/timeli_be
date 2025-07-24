@@ -22,6 +22,7 @@ object authDtos {
   )
   object PermissionsData {
     given Encoder[PermissionsData] = deriveEncoder[PermissionsData]
+    given Encoder[BigInt]          = Encoder.encodeString.contramap(_.toString)
   }
 
   case class SignupDto(email: String, password: String, firstName: String, lastName: String)

@@ -5,5 +5,6 @@ enum Permission(val mask: BigInt) {
 
   // User
   case READ_USER_TABLE extends Permission(BigInt(1) << 20)
+  case READ_USER_META  extends Permission(BigInt(1) << 21)
 
 }

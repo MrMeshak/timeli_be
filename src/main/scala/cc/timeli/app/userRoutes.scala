@@ -39,7 +39,18 @@ class UserRoutes[F[_]: Concurrent: LoggerFactory](authMP: AuthMP[F], userAlgebra
     }
   }
 
-  private val tableRoute: AuthedRoutes[AuthContext, F] = AuthedRoutes.of[AuthContext, F] {
+  private val userMetaRoute: AuthedRoutes[AuthContext, F] = AuthedRoutes.of[AuthContext, F] {
+    case req @ POST -> Root / "userMeta" as authContext => {
+      authContext.guard(Permission.READ_USER_META) {
+        userAlgebra.userMeta.value.flatMap({
+          case Right(userMetaData) => Ok(userMetaData)
+          case Left(error)         => BadRequest(FailureRes(error.name, error.message, List()))
+        })
+      }
+    }
+  }
+
+  private val userTableRoute: AuthedRoutes[AuthContext, F] = AuthedRoutes.of[AuthContext, F] {
     case req @ POST -> Root / "userTable" as authContext => {
       authContext.guard(Permission.READ_USER_TABLE) {
         req.req.validate[UserTableDto](userTableDto =>
@@ -56,7 +67,7 @@ class UserRoutes[F[_]: Concurrent: LoggerFactory](authMP: AuthMP[F], userAlgebra
   }
 
   val routes: HttpRoutes[F] = Router(
-    "user" -> (authMP.middleware(meRoute <+> tableRoute)),
+    "user" -> (authMP.middleware(meRoute <+> userMetaRoute <+> userTableRoute)),
   )
 }
 

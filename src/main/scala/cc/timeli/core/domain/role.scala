@@ -17,8 +17,9 @@ object role {
   case class Role(id: UUID, name: String, label: String, color: ThemeColor, mask: BigInt)
 
   object Role {
-    given Decoder[Role] = deriveDecoder[Role]
-    given Encoder[Role] = deriveEncoder[Role]
+    given Decoder[Role]   = deriveDecoder[Role]
+    given Encoder[Role]   = deriveEncoder[Role]
+    given Encoder[BigInt] = Encoder.encodeString.contramap(_.toString)
   }
 
   val roleCodec: SkunkCodec[Role] = (uuid, varchar(50), varchar(50), varchar(50), text).tupled.imap({

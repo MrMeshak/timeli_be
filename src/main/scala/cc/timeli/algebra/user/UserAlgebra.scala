@@ -16,7 +16,7 @@ import cc.timeli.core.logging.syntax.*
 
 trait UserAlgebra[F[_]] {
   def me(meDto: MeDto): EitherT[F, BaseError, MeData]
-  def userMetaData: EitherT[F, BaseError, UserMetaData]
+  def userMeta: EitherT[F, BaseError, UserMetaData]
   def userTable(tableDto: UserTableDto): EitherT[F, BaseError, UserTableData]
 }
 
@@ -42,12 +42,12 @@ final class UserAlgebraLive[F[_]: Concurrent: LoggerFactory](
     )
   }
 
-  override def userMetaData: EitherT[F, BaseError, UserMetaData] = {
+  override def userMeta: EitherT[F, BaseError, UserMetaData] = {
     for {
       rolesQuery <- EitherT.right(
         session
           .prepare(
-            sql"""SELECT id, name, label, color, mask FROM roles"""
+            sql"""SELECT r.id, r.name, r.label, r.color, r.mask FROM roles r WHERE r.name NOT IN ('ADMIN','SUPERADMIN')"""
               .query(roleCodec),
           ),
       )
@@ -81,16 +81,17 @@ final class UserAlgebraLive[F[_]: Concurrent: LoggerFactory](
             FROM users u
             JOIN roles r ON u.roleId = r.id
             WHERE (
-            r.name NOT IN ('SUPERADMIN','ADMIN')
-            AND ${varchar.opt} IS NULL 
+              (r.name NOT IN ('SUPERADMIN','ADMIN'))
+              AND (${varchar.opt} IS NULL 
               OR (
-                u.email ILIKE '%' || ${varchar.opt} || '%'
-                OR u.firstName ILIKE '%' || ${varchar.opt} || '%'
-                OR u.lastName ILIKE '%' || ${varchar.opt} || '%'
+                  u.email ILIKE '%' || ${varchar.opt} || '%'
+                  OR u.firstName ILIKE '%' || ${varchar.opt} || '%'
+                  OR u.lastName ILIKE '%' || ${varchar.opt} || '%'
+                )
               )
-            )
-            AND (${varchar.opt} IS NULL OR r.name = ${varchar.opt})
-            AND (${varchar.opt} IS NULL OR u.status = ${varchar.opt})
+              AND (${varchar.opt} IS NULL OR r.name = ${varchar.opt})
+              AND (${varchar.opt} IS NULL OR u.status = ${varchar.opt})
+              )
             ),
             usersFilteredCount AS (
               SELECT COUNT(*) FROM usersFilteredData
@@ -106,6 +107,7 @@ final class UserAlgebraLive[F[_]: Concurrent: LoggerFactory](
             ) AS userTableData
             """.query(userTableCodec)),
         )
+        .logError(_.toString)
       userTable <- EitherT
         .fromOptionF[F, BaseError, UserTable](
           userTableQuery.option(
@@ -122,6 +124,7 @@ final class UserAlgebraLive[F[_]: Concurrent: LoggerFactory](
           ),
           UnexpectedQueryResult("Unexpected error with userTable query"),
         )
+        .logError(_.toString)
     } yield UserTableData(
       rowCount = userTable.rowCount,
       rowData = userTable.rowData,

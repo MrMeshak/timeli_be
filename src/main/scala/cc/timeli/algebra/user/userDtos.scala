@@ -14,6 +14,9 @@ object userDtos {
   object MeData { given Encoder[MeData] = deriveEncoder[MeData] }
 
   case class UserMetaData(roles: List[Role])
+  object UserMetaData {
+    given Encoder[UserMetaData] = deriveEncoder[UserMetaData]
+  }
 
   case class UserTableDto(
       pageIndex: Int,
@@ -24,7 +27,7 @@ object userDtos {
   )
 
   object UserTableDto {
-    given userTableDtoDecoder: Decoder[UserTableDto] = deriveDecoder[UserTableDto]
+    given Decoder[UserTableDto] = deriveDecoder[UserTableDto]
   }
 
   case class UserTableData(
@@ -33,7 +36,7 @@ object userDtos {
   )
 
   object UserTableData {
-    given userTableDataEncoder: Encoder[UserTableData] = deriveEncoder[UserTableData]
+    given Encoder[UserTableData] = deriveEncoder[UserTableData]
   }
 
 }
