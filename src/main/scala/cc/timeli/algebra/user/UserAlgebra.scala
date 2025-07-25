@@ -91,7 +91,8 @@ final class UserAlgebraLive[F[_]: Concurrent: LoggerFactory](
               )
               AND (${varchar.opt} IS NULL OR r.name = ${varchar.opt})
               AND (${varchar.opt} IS NULL OR u.status = ${varchar.opt})
-              )
+            )
+            ORDER BY u.lastName ASC, u.firstName ASC
             ),
             usersFilteredCount AS (
               SELECT COUNT(*) FROM usersFilteredData
