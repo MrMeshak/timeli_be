@@ -20,7 +20,7 @@ import cc.timeli.app.HealthRoutes
 import cc.timeli.app.AuthRoutes
 import cc.timeli.algebra.auth.AuthAlgebraLive
 import cc.timeli.algebra.user.UserAlgebraLive
-import cc.timeli.algebra.booking.BookingAlgebraLive
+import cc.timeli.algebra._booking.BookingAlgebraLive
 
 class AppRoutes[F[_]: Concurrent: LoggerFactory](
     baseConfig: BaseConfig,
