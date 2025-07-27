@@ -46,4 +46,21 @@ object enums {
         case None        => throw new IllegalArgumentException(s"Invalid ThemeColor: '$value'")
   }
 
+  enum BookingSlotStatus(val value: String) {
+    case BOOKED    extends BookingSlotStatus("BOOKED")
+    case PENDING   extends BookingSlotStatus("PENDING")
+    case CANCELLED extends BookingSlotStatus("CANCELLED")
+  }
+
+  object BookingSlotStatus {
+    given Decoder[BookingSlotStatus] =
+      Decoder.decodeString.emap(v => BookingSlotStatus.fromString(v).toRight(s"Invalid BookingSlotStatus"))
+
+    def fromString(value: String): Option[BookingSlotStatus] = BookingSlotStatus.values.find(_.value == value)
+    def fromStringUnsafe(value: String): BookingSlotStatus = BookingSlotStatus.values.find(_.value == value) match {
+      case Some(status) => status
+      case None         => throw new IllegalArgumentException(s"Invalid BookingSlotStatus")
+    }
+  }
+
 }
