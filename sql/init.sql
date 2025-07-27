@@ -54,17 +54,7 @@ create TABLE IF NOT EXISTS rooms (
   CONSTRAINT fk_rooms_locations FOREIGN KEY (locationId) REFERENCES locations(id) ON DELETE CASCADE
 );
 
--- create TABLE IF NOT EXISTS availability (
---   id UUID PRIMARY KEY,
---   startDate DATE NOT NULL, 
---   dayOfWeek INT NOT NULL CHECK (dayOfWeek BETWEEN 0 AND 6),
---   mask TEXT NOT NULL,
---   roomId UUID NOT NULL,
---   CONSTRAINT unique_availability_startDate_dayOfWeek_roomId UNIQUE (startDate, dayOfWeek, roomId),
---   CONSTRAINT fk_availability_rooms FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE CASCADE
---
--- );
-
+-- Availability Policies
 create TABLE IF NOT EXISTS availabilityPolicies (
   id UUID PRIMARY KEY,
   startDate DATE NOT NULL,
@@ -83,18 +73,7 @@ create TABLE IF NOT EXISTS availabilityPoliciesByDate (
   CONSTRAINT fk_availabilityPolicies FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE CASCADE
 );
 
-
--- create TABLE IF NOT EXISTS pricePolicies (
---   id UUID PRIMARY KEY,
---   startDate DATE NOT NULL,
---   dayOfWeek INT NOT NULL CHECK (dayOfWeek BETWEEN 0 AND 6), 
---   price INT NOT NULL,
---   mask TEXT NOT NULL, 
---   roomId UUID NOT NULL,
---   CONSTRAINT unique_pricePolicies_startDate_dayOfWeek_roomId UNIQUE (startDate, dayOfWeek, roomId),
---   CONSTRAINT fk_pricePolicies_rooms FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE CASCADE
--- );
-
+-- Price Policies
 create TABLE IF NOT EXISTS pricePolicies (
   id UUID PRIMARY KEY,
   startDate DATE NOT NULL,
