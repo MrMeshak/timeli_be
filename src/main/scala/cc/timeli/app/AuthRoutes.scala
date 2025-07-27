@@ -67,12 +67,15 @@ class AuthRoutes[F[_]: Concurrent: LoggerFactory](
               )
             }
             case Left(error: InvalidCredentialsError) =>
-              Forbidden(FailureRes(error.getClass().getSimpleName().replace("$", ""), error.message, List()))
+              Forbidden(FailureRes(error.name, error.message, List()))
+            case Left(error: UserStatusSuspendedError) =>
+              Forbidden(FailureRes(error.name, error.message, List()))
             case Left(error) =>
-              BadRequest(FailureRes(error.getClass().getSimpleName().replace("$", ""), error.message, List()))
+              BadRequest(FailureRes(error.name, error.message, List()))
           }),
       )
   })
+
   private val signupRoute: HttpRoutes[F] = HttpRoutes.of[F]({
     case req @ POST -> Root / "signup" =>
       req.validate[SignupDto](signupDto =>

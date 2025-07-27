@@ -47,7 +47,6 @@ create TABLE IF NOT EXISTS rooms (
   roomCode VARCHAR(255) UNIQUE NOT NULL,
   description TEXT NOT NULL,
   capacity INT NOT NULL,
-  defaultPrice INT NOT NULL,
   slotSize INT NOT NULL CHECK (slotsize IN (5, 6, 10, 12, 15, 20, 30, 60)),
   roomTypeId VARCHAR(255) NOT NULL,
   locationId UUID NOT NULL,
@@ -55,26 +54,63 @@ create TABLE IF NOT EXISTS rooms (
   CONSTRAINT fk_rooms_locations FOREIGN KEY (locationId) REFERENCES locations(id) ON DELETE CASCADE
 );
 
-create TABLE IF NOT EXISTS availability (
-  id UUID PRIMARY KEY,
-  startDate DATE NOT NULL, 
-  dayOfWeek INT NOT NULL CHECK (dayOfWeek BETWEEN 0 AND 6),
-  mask TEXT NOT NULL,
-  roomId UUID NOT NULL,
-  CONSTRAINT unique_availability_startDate_dayOfWeek_roomId UNIQUE (startDate, dayOfWeek, roomId),
-  CONSTRAINT fk_availability_rooms FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE CASCADE
+-- create TABLE IF NOT EXISTS availability (
+--   id UUID PRIMARY KEY,
+--   startDate DATE NOT NULL, 
+--   dayOfWeek INT NOT NULL CHECK (dayOfWeek BETWEEN 0 AND 6),
+--   mask TEXT NOT NULL,
+--   roomId UUID NOT NULL,
+--   CONSTRAINT unique_availability_startDate_dayOfWeek_roomId UNIQUE (startDate, dayOfWeek, roomId),
+--   CONSTRAINT fk_availability_rooms FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE CASCADE
+--
+-- );
 
+create TABLE IF NOT EXISTS availabilityPolicies (
+  id UUID PRIMARY KEY,
+  startDate DATE NOT NULL,
+  policy JSONB NOT NULL, -- JSON List[BigInt] storing availability mask for each day of the week
+  roomId UUID NOT NULL,
+  CONSTRAINT unique_availabilityPolicy_startDate_roomId UNIQUE (startDate, roomId),
+  CONSTRAINT fk_availability_rooms FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE CASCADE
 );
+
+create TABLE IF NOT EXISTS availabilityPoliciesByDate (
+  id UUID PRIMARY KEY,
+  activeDate DATE NOT NULL, 
+  policy TEXT NOT NULL, -- BigInt storing availability mask
+  roomId UUID NOT NULL,
+  CONSTRAINT unique_availabilityPoliciesByDate_activeDate_roomId UNIQUE (activeDate, roomId),
+  CONSTRAINT fk_availabilityPolicies FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE CASCADE
+);
+
+
+-- create TABLE IF NOT EXISTS pricePolicies (
+--   id UUID PRIMARY KEY,
+--   startDate DATE NOT NULL,
+--   dayOfWeek INT NOT NULL CHECK (dayOfWeek BETWEEN 0 AND 6), 
+--   price INT NOT NULL,
+--   mask TEXT NOT NULL, 
+--   roomId UUID NOT NULL,
+--   CONSTRAINT unique_pricePolicies_startDate_dayOfWeek_roomId UNIQUE (startDate, dayOfWeek, roomId),
+--   CONSTRAINT fk_pricePolicies_rooms FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE CASCADE
+-- );
 
 create TABLE IF NOT EXISTS pricePolicies (
   id UUID PRIMARY KEY,
   startDate DATE NOT NULL,
-  dayOfWeek INT NOT NULL CHECK (dayOfWeek BETWEEN 0 AND 6), 
-  price INT NOT NULL,
-  mask TEXT NOT NULL, 
+  policy JSONB NOT NULL, -- JSON List[List[Int]] stores prices for each day of the week
   roomId UUID NOT NULL,
-  CONSTRAINT unique_pricePolicies_startDate_dayOfWeek_roomId UNIQUE (startDate, dayOfWeek, roomId),
+  CONSTRAINT unique_pricePolicies_startDate_roomId UNIQUE (startDate, roomId),
   CONSTRAINT fk_pricePolicies_rooms FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE CASCADE
+);
+
+create  TABLE IF NOT EXISTS pricePoliciesByDate (
+  id UUID PRIMARY KEY,
+  activeDate DATE NOT NULL,
+  policy JSONB NOT NULL, -- JSON List[Int] stores prices 
+  roomId UUID NOT NULL,
+  CONSTRAINT unique_availabilityPolicyByDate_activeDate_roomId UNIQUE (activeDate, roomId),
+  CONSTRAINT fk_pricePoliciesByDate_rooms FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE CASCADE
 );
 
 -- Booking --
@@ -86,7 +122,7 @@ create TABLE IF NOT EXISTS bookings (
 );
 
 -- Slots --
-create TABLE IF NOT EXISTS slots (
+create TABLE IF NOT EXISTS bookingSlots (
   id UUID PRIMARY KEY,
   slotDate DATE NOT NULL,
   slotIndex INT NOT NULL,

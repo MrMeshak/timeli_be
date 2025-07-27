@@ -5,8 +5,9 @@ import io.circe.generic.semiauto.*
 
 import cats.implicits.*
 import cats.syntax.*
-import skunk.Codec
+import skunk.{Codec => SkunkCodec}
 import skunk.codec.all.*
+import skunk.circe.codec.all.*
 
 import java.util.UUID
 import java.time.LocalDate
@@ -16,9 +17,7 @@ object pricePolicy {
   final case class PricePolicy(
       id: UUID,
       startDate: LocalDate,
-      dayOfWeek: Int,
-      price: Int,
-      mask: BigInt,
+      policy: List[List[Int]],
       roomId: UUID,
   ) {}
 
@@ -28,9 +27,9 @@ object pricePolicy {
     given Encoder[PricePolicy] = deriveEncoder[PricePolicy]
   }
 
-  val pricePolicyCodec: Codec[PricePolicy] =
-    (uuid, date, int4, int4, text, uuid).tupled.imap({
-      case (id, startDate, dayOfWeek, price, mask, roomId) =>
-        PricePolicy(id, startDate, dayOfWeek, price, BigInt(mask), roomId)
-    })(p => (p.id, p.startDate, p.dayOfWeek, p.price, p.mask.toString, p.roomId))
+  val pricePolicyCodec: SkunkCodec[PricePolicy] =
+    (uuid, date, jsonb[List[List[Int]]], uuid).tupled.imap({
+      case (id, startDate, policy, roomId) =>
+        PricePolicy(id, startDate, policy, roomId)
+    })(pp => (pp.id, pp.startDate, pp.policy, pp.roomId))
 }

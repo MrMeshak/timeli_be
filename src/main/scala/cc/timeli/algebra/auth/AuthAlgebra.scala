@@ -117,6 +117,7 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
           ),
       )
       userWithRole <- EitherT.fromOptionF(query.option(loginDto.email), InvalidCredentialsError())
+      _            <- EitherT.cond(userWithRole.status != UserStatus.SUSPENDED, (), UserStatusSuspendedError())
       _ <- EitherT.cond(
         BCrypt.verifyer().verify(loginDto.password.toCharArray(), userWithRole.password).verified,
         (),
@@ -135,7 +136,10 @@ final class AuthAlgebraLive[F[_]: Concurrent: LoggerFactory](
           httpOnly = true,
           secure = true,
           sameSite = Some(SameSite.Strict),
-          maxAge = Some(jwtUtils.config.accessTokenExpTime),
+          // maxAge needs to be set to the refreshTokenExpTime as the access token needs to be sent with the refresh token even when the access JWT is expired
+          maxAge = Some(
+            jwtUtils.config.refreshTokenExpTime,
+          ),
         ),
       )
       refreshTokenCookie <- EitherT.rightT(

@@ -20,10 +20,10 @@ import cc.timeli.core.domain.user.*
 import cc.timeli.core.domain.location.*
 import cc.timeli.core.domain.roomType.*
 import cc.timeli.core.domain.room.*
-import cc.timeli.core.domain.availability.*
+import cc.timeli.core.domain.availabilityPolicy.*
 import cc.timeli.core.domain.pricePolicy.*
 import cc.timeli.core.domain.booking.*
-import cc.timeli.core.domain.slot.*
+import cc.timeli.core.domain.bookingSlot.*
 
 import cc.timeli.core.config.SeederConfig
 import cc.timeli.core.db.seeder.data.roleSeedData
@@ -32,9 +32,9 @@ import cc.timeli.core.db.seeder.data.roomTypeSeedData
 import cc.timeli.core.db.seeder.data.roomSeedData
 import cc.timeli.core.db.seeder.data.userSeedData
 import cc.timeli.core.db.seeder.data.bookingSeedData
-import cc.timeli.core.db.seeder.data.availabilitySeedData
+import cc.timeli.core.db.seeder.data.availabilityPolicySeedData
 import cc.timeli.core.db.seeder.data.pricePolicyData
-import cc.timeli.core.db.seeder.data.slotSeedData
+import cc.timeli.core.db.seeder.data.bookingSlotSeedData
 
 object Seeder extends IOApp.Simple {
 
@@ -81,11 +81,11 @@ object Seeder extends IOApp.Simple {
           """.command)
         _ <- roomSeedData.traverse(r => commandRoom.execute(r))
 
-        commandAvailability <- session.prepare(sql"""
-          INSERT INTO availability VALUES ($availabilityCodec)
+        commandAvailabilityPolicy <- session.prepare(sql"""
+          INSERT INTO availabilityPolicies VALUES ($availabilityPolicyCodec)
           ON CONFLICT DO NOTHING
           """.command)
-        _ <- availabilitySeedData.traverse(a => commandAvailability.execute(a))
+        _ <- availabilityPolicySeedData.traverse(a => commandAvailabilityPolicy.execute(a))
 
         commandPricePolicy <- session.prepare(sql"""
           INSERT INTO pricePolicies VALUES ($pricePolicyCodec) 
@@ -100,10 +100,10 @@ object Seeder extends IOApp.Simple {
         _ <- bookingSeedData.traverse(b => commandBooking.execute(b))
 
         commandSlot <- session.prepare(sql"""
-          INSERT INTO slots VALUES ($slotCodec) 
+          INSERT INTO bookingSlots VALUES ($bookingSlotCodec) 
           ON CONFLICT DO NOTHING
           """.command)
-        _ <- slotSeedData.traverse(s => commandSlot.execute(s))
+        _ <- bookingSlotSeedData.traverse(s => commandSlot.execute(s))
 
       } yield ()
     })

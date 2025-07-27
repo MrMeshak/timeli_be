@@ -20,7 +20,6 @@ import cc.timeli.app.HealthRoutes
 import cc.timeli.app.AuthRoutes
 import cc.timeli.algebra.auth.AuthAlgebraLive
 import cc.timeli.algebra.user.UserAlgebraLive
-import cc.timeli.algebra.booking.BookingAlgebraLive
 
 class AppRoutes[F[_]: Concurrent: LoggerFactory](
     baseConfig: BaseConfig,
@@ -30,18 +29,16 @@ class AppRoutes[F[_]: Concurrent: LoggerFactory](
     jwtUtils: JwtUtils[F],
 ) {
 
-  private val authMP         = AuthMP(jwtUtils, redisUtils)
-  private val authAlgebra    = AuthAlgebraLive[F](baseConfig, session, mailer, redisUtils, jwtUtils)
-  private val userAlgebra    = UserAlgebraLive[F](session)
-  private val bookingAlgebra = BookingAlgebraLive[F](session)
+  private val authMP      = AuthMP(jwtUtils, redisUtils)
+  private val authAlgebra = AuthAlgebraLive[F](baseConfig, session, mailer, redisUtils, jwtUtils)
+  private val userAlgebra = UserAlgebraLive[F](session)
 
-  private val healthRoutes  = HealthRoutes[F].routes
-  private val authRoutes    = AuthRoutes[F](authMP, authAlgebra).routes
-  private val userRoutes    = UserRoutes[F](authMP, userAlgebra).routes
-  private val bookingRoutes = BookingRoutes[F](bookingAlgebra).routes
+  private val healthRoutes = HealthRoutes[F].routes
+  private val authRoutes   = AuthRoutes[F](authMP, authAlgebra).routes
+  private val userRoutes   = UserRoutes[F](authMP, userAlgebra).routes
 
   val routes = Router(
-    "api" -> (healthRoutes <+> authRoutes <+> userRoutes <+> bookingRoutes),
+    "api" -> (healthRoutes <+> authRoutes <+> userRoutes),
   )
 }
 
