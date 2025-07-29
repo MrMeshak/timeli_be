@@ -22,6 +22,12 @@ object availabilityPolicyByDate {
       roomId: UUID,
   )
 
+  object AvailabilityPolicyByDate {
+    given Encoder[BigInt]                   = Encoder.encodeString.contramap[BigInt](_.toString)
+    given Decoder[AvailabilityPolicyByDate] = deriveDecoder[AvailabilityPolicyByDate]
+    given Encoder[AvailabilityPolicyByDate] = deriveEncoder[AvailabilityPolicyByDate]
+  }
+
   val availabilityPolicyByDateCodec: SkunkCodec[AvailabilityPolicyByDate] =
     (uuid, date, text, uuid).tupled.imap({
       case (id, activeDate, policy, roomId) => AvailabilityPolicyByDate(id, activeDate, BigInt(policy), roomId)

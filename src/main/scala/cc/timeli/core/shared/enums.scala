@@ -55,6 +55,7 @@ object enums {
   object BookingSlotStatus {
     given Decoder[BookingSlotStatus] =
       Decoder.decodeString.emap(v => BookingSlotStatus.fromString(v).toRight(s"Invalid BookingSlotStatus"))
+    given Encoder[BookingSlotStatus] = Encoder.encodeString.contramap(_.value)
 
     def fromString(value: String): Option[BookingSlotStatus] = BookingSlotStatus.values.find(_.value == value)
     def fromStringUnsafe(value: String): BookingSlotStatus = BookingSlotStatus.values.find(_.value == value) match {

@@ -7,4 +7,8 @@ enum Permission(val mask: BigInt) {
   case READ_USER_META  extends Permission(BigInt(1) << 20)
   case READ_USER_TABLE extends Permission(BigInt(1) << 21)
 
+  // Room
+
+  // Booking
+
 }
