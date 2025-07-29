@@ -157,3 +157,8 @@ final class RoomAlgebraLive[F[_]: Concurrent: LoggerFactory](session: Session[F]
       rooms,
     )
 }
+
+object RoomAlgebraLive {
+  def apply[F[_]: Concurrent: LoggerFactory](session: Session[F]) =
+    new RoomAlgebraLive[F](session)
+}
