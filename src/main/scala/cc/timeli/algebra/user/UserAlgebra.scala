@@ -47,7 +47,7 @@ final class UserAlgebraLive[F[_]: Concurrent: LoggerFactory](
       rolesQuery <- EitherT.right(
         session
           .prepare(
-            sql"""SELECT r.id, r.name, r.label, r.color, r.mask FROM roles r WHERE r.name NOT IN ('ADMIN','SUPERADMIN')"""
+            sql"""SELECT r.id, r.name, r.label, r.color FROM roles r WHERE r.name NOT IN ('ADMIN','SUPERADMIN')"""
               .query(roleCodec),
           ),
       )

@@ -8,7 +8,7 @@ enum Permission(val mask: BigInt) {
   case READ_USER_TABLE extends Permission(BigInt(1) << 21)
 
   // Room
-
+  case READ_ROOM_GRID extends Permission(BigInt(1) << 40)
   // Booking
 
 }

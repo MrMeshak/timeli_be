@@ -87,6 +87,10 @@ object room {
       bookingSlots: List[BookingSlotWithU],
   )
 
+  object RoomWithTAP_S {
+    given Encoder[RoomWithTAP_S] = deriveEncoder[RoomWithTAP_S]
+  }
+
   val roomWithTAP_SCodec: SkunkCodec[RoomWithTAP_S] =
     (
       uuid,

@@ -8,7 +8,7 @@ import cc.timeli.core.validation.baseValidators.*
 
 object userValidators {
 
-  given tableDtoValidator: Validator[UserTableDto] with {
+  given userTableDtoValidator: Validator[UserTableDto] with {
     override def validate(value: UserTableDto): ValidatedNel[ValidationFailure, UserTableDto] = {
       val UserTableDto(pageIndex, pageSize, searchTerm, fRole, fStatus) = value;
       (

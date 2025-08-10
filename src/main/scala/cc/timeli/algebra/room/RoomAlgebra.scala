@@ -20,10 +20,12 @@ trait RoomAlgebra[F[_]] {
 }
 
 final class RoomAlgebraLive[F[_]: Concurrent: LoggerFactory](session: Session[F]) extends RoomAlgebra[F] {
+  given Logger[F] = LoggerFactory.getLogger()
 
   override def roomGrid(roomGridDto: RoomGridDto): EitherT[F, BaseError, RoomGridData] =
     for {
-      roomsQuery <- EitherT.right(session.prepare(sql"""
+      roomsQuery <- EitherT
+        .right(session.prepare(sql"""
       WITH
       availabilityPolicyData AS (
         SELECT DISTINCT ON (ap.roomId)
@@ -97,6 +99,7 @@ final class RoomAlgebraLive[F[_]: Concurrent: LoggerFactory](session: Session[F]
               'role', jsonb_build_object(
                 'id', r.id,
                 'name', r.name,
+                'label', r.label,
                 'color', r.color, 
                 'mask', r.mask
               ) 
@@ -120,11 +123,10 @@ final class RoomAlgebraLive[F[_]: Concurrent: LoggerFactory](session: Session[F]
       r.slotsize,
       r.roomTypeId,
       r.locationId,
-      r.capacity,
-      json_build_object(
+      jsonb_build_object(
         'id', rt.id,
         'name', rt.name
-      ) AS roleType,
+      ) AS roomType,
       ap.availabilityPolicy,
       apbd.availabilityPolicyByDate,
       pp.pricePolicy,
@@ -138,21 +140,24 @@ final class RoomAlgebraLive[F[_]: Concurrent: LoggerFactory](session: Session[F]
       LEFT JOIN pricePolicyByDateData ppbd ON ppbd.roomId = r.id
       LEFT JOIN bookingSlotData bs ON bs.roomId = r.id
       """.query(roomWithTAP_SCodec)))
-      rooms <- EitherT.right(
-        roomsQuery
-          .stream(
-            (
-              roomGridDto.date,
-              roomGridDto.date,
-              roomGridDto.date,
-              roomGridDto.date,
-              roomGridDto.date,
-            ),
-            64,
-          )
-          .compile
-          .toList,
-      )
+        .logError(_.toString)
+      rooms <- EitherT
+        .right(
+          roomsQuery
+            .stream(
+              (
+                roomGridDto.date,
+                roomGridDto.date,
+                roomGridDto.date,
+                roomGridDto.date,
+                roomGridDto.date,
+              ),
+              64,
+            )
+            .compile
+            .toList,
+        )
+        .logError(_.toString)
     } yield RoomGridData(
       rooms,
     )

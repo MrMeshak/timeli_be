@@ -12,8 +12,15 @@ object roomDtos {
   final case class RoomGridDto(
       date: LocalDate,
   )
+  object RoomGridDto {
+    given Decoder[RoomGridDto] = deriveDecoder[RoomGridDto]
+  }
 
   final case class RoomGridData(
       rooms: List[RoomWithTAP_S],
   )
+  object RoomGridData {
+    given Encoder[RoomGridData] = deriveEncoder[RoomGridData]
+  }
+
 }

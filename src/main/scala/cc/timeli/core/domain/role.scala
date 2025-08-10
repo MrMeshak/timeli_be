@@ -17,12 +17,14 @@ object role {
   case class Role(id: UUID, name: String, label: String, color: ThemeColor, mask: BigInt)
 
   object Role {
-    given Decoder[Role]   = deriveDecoder[Role]
-    given Encoder[Role]   = deriveEncoder[Role]
+    given Decoder[Role] = deriveDecoder[Role]
+    given Encoder[Role] = deriveEncoder[Role].mapJsonObject(_.remove("mask"))
+
     given Encoder[BigInt] = Encoder.encodeString.contramap(_.toString)
   }
 
   val roleCodec: SkunkCodec[Role] = (uuid, varchar(50), varchar(50), varchar(50), text).tupled.imap({
     case (id, role, label, color, mask) => Role(id, role, label, ThemeColor.fromStringUnsafe(color), BigInt(mask))
   })(role => (role.id, role.name, role.label, role.color.value, role.mask.toString))
+
 }

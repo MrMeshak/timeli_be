@@ -20,6 +20,7 @@ import cc.timeli.app.HealthRoutes
 import cc.timeli.app.AuthRoutes
 import cc.timeli.algebra.auth.AuthAlgebraLive
 import cc.timeli.algebra.user.UserAlgebraLive
+import cc.timeli.algebra.room.RoomAlgebraLive
 
 class AppRoutes[F[_]: Concurrent: LoggerFactory](
     baseConfig: BaseConfig,
@@ -32,13 +33,15 @@ class AppRoutes[F[_]: Concurrent: LoggerFactory](
   private val authMP      = AuthMP(jwtUtils, redisUtils)
   private val authAlgebra = AuthAlgebraLive[F](baseConfig, session, mailer, redisUtils, jwtUtils)
   private val userAlgebra = UserAlgebraLive[F](session)
+  private val roomAlgebra = RoomAlgebraLive[F](session)
 
   private val healthRoutes = HealthRoutes[F].routes
   private val authRoutes   = AuthRoutes[F](authMP, authAlgebra).routes
   private val userRoutes   = UserRoutes[F](authMP, userAlgebra).routes
+  private val roomRoutes   = RoomRoutes[F](authMP, roomAlgebra).routes
 
   val routes = Router(
-    "api" -> (healthRoutes <+> authRoutes <+> userRoutes),
+    "api" -> (healthRoutes <+> authRoutes <+> userRoutes <+> roomRoutes),
   )
 }
 
